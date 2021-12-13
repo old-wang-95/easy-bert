@@ -5,7 +5,7 @@ from transformers import AlbertModel
 from transformers import BertTokenizer, BertModel
 from transformers import DistilBertTokenizer, DistilBertModel
 from transformers import ElectraTokenizer, ElectraModel
-from transformers import LongformerModel
+from transformers import LongformerModel, LongformerTokenizer
 from transformers.activations import get_activation
 
 from easy_bert.losses.focal_loss import FocalLoss
@@ -38,6 +38,8 @@ class ClassificationModel(nn.Module):
             self.bert_model = ElectraModel.from_pretrained(bert_base_model_dir)
         elif 'longformer' in bert_base_model_dir.lower():
             self.bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
+            # longformer-chinese-base-4096模型参数prefix为bert而非标准的longformer，这是个坑
+            LongformerModel.base_model_prefix = 'bert'
             self.bert_model = LongformerModel.from_pretrained(bert_base_model_dir)
         elif 'distil' in bert_base_model_dir.lower():
             self.bert_tokenizer = DistilBertTokenizer.from_pretrained(bert_base_model_dir)
