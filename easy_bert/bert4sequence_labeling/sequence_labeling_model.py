@@ -86,7 +86,7 @@ class SequenceLabelingModel(nn.Module):
         lengths = attention_mask.sum(axis=1)
         # 根据loss_type，选择使用维特比解码或直接argmax
         if self.loss_type == 'crf_loss':
-            best_paths = self.crf.get_batch_best_path(logits, lengths)
+            best_paths = self.crf.get_batch_best_path(logits, lengths).to(self.device)
         else:
             best_paths = torch.argmax(logits, dim=-1)
 
@@ -107,7 +107,7 @@ class SequenceLabelingModel(nn.Module):
                 active_logits, active_labels = active_logits[active_loss], active_labels[active_loss]
                 loss = FocalLoss(gamma=self.focal_loss_gamma, alpha=self.focal_loss_alpha)(active_logits, active_labels)
             else:
-                loss = LabelSmoothingCrossEntropy(alpha=0.1, ignore_index=-1)(logits, labels)  # 忽略label=-1位置
+                loss = LabelSmoothingCrossEntropy(alpha=0.1, ignore_index=-1)(active_logits, active_labels)
             return best_paths, loss if not return_extra else (best_paths, loss, extra)
 
         return best_paths if not return_extra else (best_paths, extra)
