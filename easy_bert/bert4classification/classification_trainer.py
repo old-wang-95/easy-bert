@@ -1,8 +1,11 @@
 import json
 import math
 import os
+import random
 
+import numpy as np
 import torch
+import torch.cuda
 from sklearn.utils import shuffle
 from torch.nn import DataParallel
 from transformers import AdamW
@@ -17,12 +20,13 @@ from easy_bert.vocab import Vocab
 class ClassificationTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
-                 loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None):
+                 loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None, random_seed=0):
         self.pretrained_model_dir = pretrained_model_dir
         self.model_dir = model_dir
         self.ckpt_name = ckpt_name
         self.vocab_name = vocab_name
         self.enable_parallel = enable_parallel
+        self.random_seed = random_seed
 
         self.adversarial = adversarial
         assert adversarial in (None, 'fgm', 'pgd')
@@ -40,6 +44,13 @@ class ClassificationTrainer(BaseTrainer):
         self.epoch = None
 
         self.vocab = Vocab()
+
+    def _set_random_seed(self):
+        """针对torch torch.cuda numpy random分别设定随机种子"""
+        torch.manual_seed(self.random_seed)
+        torch.cuda.manual_seed_all(self.random_seed)
+        np.random.seed(self.random_seed)
+        random.seed(self.random_seed)
 
     def _build_model(self):
         """构建bert模型"""
