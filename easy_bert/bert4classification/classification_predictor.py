@@ -34,8 +34,9 @@ class ClassificationPredictor(BasePredictor):
     def _load_model(self):
         """加载模型"""
         # 根据config初始化ClassificationModel
+        # 注意，部分参数推理时并不需要，这里传入debug时可读性更好
         self.model = ClassificationModel(
-            self.pretrained_model_dir, self._config['label_size'],
+            self.pretrained_model_dir, self._config['label_size'], self._config['dropout_rate'],
             loss_type=self._config['loss_type'], focal_loss_alpha=self._config['focal_loss_alpha'],
             focal_loss_gamma=self._config['focal_loss_gamma']
         )
