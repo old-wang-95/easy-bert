@@ -26,7 +26,10 @@ class ClassificationTrainer(BaseTrainer):
         self.ckpt_name = ckpt_name
         self.vocab_name = vocab_name
         self.enable_parallel = enable_parallel
+
+        # 设置随机种子
         self.random_seed = random_seed
+        self._set_random_seed(random_seed)
 
         self.adversarial = adversarial
         assert adversarial in (None, 'fgm', 'pgd')
@@ -45,12 +48,12 @@ class ClassificationTrainer(BaseTrainer):
 
         self.vocab = Vocab()
 
-    def _set_random_seed(self):
+    def _set_random_seed(self, seed):
         """针对torch torch.cuda numpy random分别设定随机种子"""
-        torch.manual_seed(self.random_seed)
-        torch.cuda.manual_seed_all(self.random_seed)
-        np.random.seed(self.random_seed)
-        random.seed(self.random_seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        np.random.seed(seed)
+        random.seed(seed)
 
     def _build_model(self):
         """构建bert模型"""
