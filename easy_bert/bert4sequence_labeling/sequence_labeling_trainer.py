@@ -12,7 +12,7 @@ from transformers import AdamW
 from easy_bert import logger
 from easy_bert.adversarial import FGM, PGD
 from easy_bert.base.base_trainer import BaseTrainer
-from easy_bert.bert4sequence_labeling.sequence_labelling_model import SequenceLabelingModel
+from easy_bert.bert4sequence_labeling.sequence_labeling_model import SequenceLabelingModel
 from easy_bert.vocab import Vocab
 
 

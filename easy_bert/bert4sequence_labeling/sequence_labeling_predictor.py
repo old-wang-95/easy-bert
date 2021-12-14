@@ -5,7 +5,7 @@ import torch
 from torch.nn import DataParallel
 
 from easy_bert.base.base_predictor import BasePredictor
-from easy_bert.bert4sequence_labeling.sequence_labelling_model import SequenceLabelingModel
+from easy_bert.bert4sequence_labeling.sequence_labeling_model import SequenceLabelingModel
 from easy_bert.vocab import Vocab
 
 
