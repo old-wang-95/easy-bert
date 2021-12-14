@@ -196,7 +196,7 @@ class ClassificationTrainer(BaseTrainer):
 
                 # 计算train acc、valid acc
                 train_acc = self._get_acc_one_step(best_paths, batch_label_ids)
-                valid_acc, valid_loss = self.validate(validate_texts, validate_labels, sample_size=batch_size)
+                valid_acc, valid_loss = self.validate(validate_texts, validate_labels, batch_size, warning_max_len)
 
                 # 计算连续max_loss_num个平均valid_loss
                 loss_buff.append(valid_loss)
