@@ -57,9 +57,7 @@ class SequenceLabelingModel(nn.Module):
     def forward(self, input_ids, attention_mask, token_type_ids=None, position_ids=None,
                 head_mask=None, inputs_embeds=None, labels=None, return_extra=False):
 
-        # Longformer的[cls]位置设置全局Attention，值为2
         if isinstance(self.bert_model, LongformerModel):
-            attention_mask[:, 0] = 2
             bert_out = self.bert_model(
                 input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
                 position_ids=position_ids, inputs_embeds=None, return_dict=False,
