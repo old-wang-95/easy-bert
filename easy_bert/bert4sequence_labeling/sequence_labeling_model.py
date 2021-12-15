@@ -81,10 +81,9 @@ class SequenceLabelingModel(nn.Module):
         seq_outs = self.dropout(last_hidden_state)
         logits = self.linear(seq_outs)
 
-        lengths = attention_mask.sum(axis=1)
         # 根据loss_type，选择使用维特比解码或直接argmax
         if self.loss_type == 'crf_loss':
-            best_paths = self.crf.get_batch_best_path(logits, lengths).to(self.device)
+            best_paths, scores = self.crf.viterbi_decode(logits, attention_mask)
         else:
             best_paths = torch.argmax(logits, dim=-1)
 
@@ -97,7 +96,10 @@ class SequenceLabelingModel(nn.Module):
             active_logits, active_labels = logits.view(-1, self.label_size)[active_loss], labels.view(-1)[active_loss]
             if self.loss_type == 'crf_loss':
                 # 计算loss时，忽略[CLS]、[SEP]以及PAD部分
-                loss = self.crf.negative_log_loss(inputs=logits[:, 1:, :], length=lengths - 2, tags=labels[:, 1:])
+                lengths, new_att_mask = attention_mask.sum(axis=1), attention_mask.clone()
+                for i, length in enumerate(lengths):
+                    new_att_mask[i, length - 1] = 0  # [SEP]部分置为0
+                loss = self.crf.forward(logits[:, 1:, :], labels[:, 1:], new_att_mask[:, 1:]).mean()
             elif self.loss_type == 'cross_entropy_loss':
                 loss = CrossEntropyLoss(ignore_index=-1)(active_logits, active_labels)  # 忽略label=-1位置
             elif self.loss_type == 'focal_loss':

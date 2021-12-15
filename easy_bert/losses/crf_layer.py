@@ -1,181 +1,193 @@
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+
+"""
+本代码主要来自fastNLP
+https://github.com/fastnlp/fastNLP/blob/master/fastNLP/modules/decoder/crf.py
+"""
 
 
 class CRF(nn.Module):
-    """线性条件随机场"""
+    r"""
+    条件随机场。提供forward()以及viterbi_decode()两个方法，分别用于训练与inference。
+    """
 
-    def __init__(self, num_tag):
-        if num_tag <= 0:
-            raise ValueError("Invalid value of num_tag: %d" % num_tag)
+    def __init__(self, num_tags, include_start_end_trans=False, allowed_transitions=None):
+        r"""
+
+        :param int num_tags: 标签的数量
+        :param bool include_start_end_trans: 是否考虑各个tag作为开始以及结尾的分数。
+        :param List[Tuple[from_tag_id(int), to_tag_id(int)]] allowed_transitions: 内部的Tuple[from_tag_id(int),
+                                   to_tag_id(int)]视为允许发生的跃迁，其他没有包含的跃迁认为是禁止跃迁，可以通过
+                                   allowed_transitions()函数得到；如果为None，则所有跃迁均为合法
+        """
         super(CRF, self).__init__()
-        self.num_tag = num_tag
-        self.start_tag = num_tag
-        self.end_tag = num_tag + 1
-        self.use_cuda = torch.cuda.is_available()
-        # 转移矩阵transitions：P_jk 表示从tag_j到tag_k的概率
-        # P_j* 表示所有从tag_j出发的边
-        # P_*k 表示所有到tag_k的边
-        self.transitions = nn.Parameter(torch.Tensor(num_tag + 2, num_tag + 2))
-        nn.init.uniform_(self.transitions, -0.1, 0.1)
-        self.transitions.data[self.end_tag, :] = -10000  # 表示从EOS->其他标签为不可能事件, 如果发生，则产生一个极大的损失
-        self.transitions.data[:, self.start_tag] = -10000  # 表示从其他标签->SOS为不可能事件, 同上
 
-    def real_path_score(self, features, tags):
-        """
-        features: (time_steps, num_tag)
-        real_path_score表示真实路径分数
-        它由Emission score和Transition score两部分相加组成
-        Emission score由LSTM输出结合真实的tag决定，表示我们希望由输出得到真实的标签
-        Transition score则是crf层需要进行训练的参数，它是随机初始化的，表示标签序列前后间的约束关系（转移概率）
-        Transition矩阵存储的是标签序列相互间的约束关系
-        在训练的过程中，希望real_path_score最高，因为这是所有路径中最可能的路径
-        """
-        r = torch.LongTensor(range(features.size(0)))
-        if self.use_cuda:
-            pad_start_tags = torch.cat([torch.cuda.LongTensor([self.start_tag]), tags])
-            pad_stop_tags = torch.cat([tags, torch.cuda.LongTensor([self.end_tag])])
-            r = r.cuda()
+        self.include_start_end_trans = include_start_end_trans
+        self.num_tags = num_tags
+
+        # the meaning of entry in this matrix is (from_tag_id, to_tag_id) score
+        self.trans_m = nn.Parameter(torch.randn(num_tags, num_tags))
+        if self.include_start_end_trans:
+            self.start_scores = nn.Parameter(torch.randn(num_tags))
+            self.end_scores = nn.Parameter(torch.randn(num_tags))
+
+        if allowed_transitions is None:
+            constrain = torch.zeros(num_tags + 2, num_tags + 2)
         else:
-            pad_start_tags = torch.cat([torch.LongTensor([self.start_tag]), tags])
-            pad_stop_tags = torch.cat([tags, torch.LongTensor([self.end_tag])])
-        # Transition score + Emission score
-        score = torch.sum(self.transitions[pad_start_tags, pad_stop_tags]) + torch.sum(features[r, tags])
+            constrain = torch.full((num_tags + 2, num_tags + 2), fill_value=-10000.0, dtype=torch.float)
+            has_start = False
+            has_end = False
+            for from_tag_id, to_tag_id in allowed_transitions:
+                constrain[from_tag_id, to_tag_id] = 0
+                if from_tag_id == num_tags:
+                    has_start = True
+                if to_tag_id == num_tags + 1:
+                    has_end = True
+            if not has_start:
+                constrain[num_tags, :].fill_(0)
+            if not has_end:
+                constrain[:, num_tags + 1].fill_(0)
+        self._constrain = nn.Parameter(constrain, requires_grad=False)
+
+        nn.init.xavier_normal_(self.trans_m)
+
+    def _normalizer_likelihood(self, logits, mask):
+        r"""Computes the (batch_size,) denominator term for the log-likelihood, which is the
+        sum of the likelihoods across all possible state sequences.
+        :param logits:FloatTensor, max_len x batch_size x num_tags
+        :param mask:ByteTensor, max_len x batch_size
+        :return:FloatTensor, batch_size
+        """
+        seq_len, batch_size, n_tags = logits.size()
+        alpha = logits[0]
+        if self.include_start_end_trans:
+            alpha = alpha + self.start_scores.view(1, -1)
+
+        flip_mask = mask.eq(False)
+
+        for i in range(1, seq_len):
+            emit_score = logits[i].view(batch_size, 1, n_tags)
+            trans_score = self.trans_m.view(1, n_tags, n_tags)
+            tmp = alpha.view(batch_size, n_tags, 1) + emit_score + trans_score
+            alpha = torch.logsumexp(tmp, 1).masked_fill(flip_mask[i].view(batch_size, 1), 0) + \
+                    alpha.masked_fill(mask[i].eq(True).view(batch_size, 1), 0)
+
+        if self.include_start_end_trans:
+            alpha = alpha + self.end_scores.view(1, -1)
+
+        return torch.logsumexp(alpha, 1)
+
+    def _gold_score(self, logits, tags, mask):
+        r"""
+        Compute the score for the gold path.
+        :param logits: FloatTensor, max_len x batch_size x num_tags
+        :param tags: LongTensor, max_len x batch_size
+        :param mask: ByteTensor, max_len x batch_size
+        :return:FloatTensor, batch_size
+        """
+        seq_len, batch_size, _ = logits.size()
+        batch_idx = torch.arange(batch_size, dtype=torch.long, device=logits.device)
+        seq_idx = torch.arange(seq_len, dtype=torch.long, device=logits.device)
+
+        # trans_socre [L-1, B]
+        mask = mask.eq(True)
+        flip_mask = mask.eq(False)
+        trans_score = self.trans_m[tags[:seq_len - 1], tags[1:]].masked_fill(flip_mask[1:, :], 0)
+        # emit_score [L, B]
+        emit_score = logits[seq_idx.view(-1, 1), batch_idx.view(1, -1), tags].masked_fill(flip_mask, 0)
+        # score [L-1, B]
+        score = trans_score + emit_score[:seq_len - 1, :]
+        score = score.sum(0) + emit_score[-1].masked_fill(flip_mask[-1], 0)
+        if self.include_start_end_trans:
+            st_scores = self.start_scores.view(1, -1).repeat(batch_size, 1)[batch_idx, tags[0]]
+            last_idx = mask.long().sum(0) - 1
+            ed_scores = self.end_scores.view(1, -1).repeat(batch_size, 1)[batch_idx, tags[last_idx, batch_idx]]
+            score = score + st_scores + ed_scores
+        # return [B,]
         return score
 
-    def all_possible_path_score(self, features):
+    def forward(self, feats, tags, mask):
+        r"""
+        用于计算CRF的前向loss，返回值为一个batch_size的FloatTensor，可能需要mean()求得loss。
+        :param torch.FloatTensor feats: batch_size x max_len x num_tags，特征矩阵。
+        :param torch.LongTensor tags: batch_size x max_len，标签矩阵。
+        :param torch.ByteTensor mask: batch_size x max_len，为0的位置认为是padding。
+        :return: torch.FloatTensor, (batch_size,)
         """
-        计算所有可能的路径分数的log和：前向算法
-        step1: 将forward列expand成3*3
-        step2: 将下个单词的emission行expand成3*3
-        step3: 将1和2和对应位置的转移矩阵相加
-        step4: 更新forward，合并行
-        step5: 取forward指数的对数计算total
+        feats = feats.transpose(0, 1)
+        tags = tags.transpose(0, 1).long()
+        mask = mask.transpose(0, 1).float()
+        all_path_score = self._normalizer_likelihood(feats, mask)
+        gold_path_score = self._gold_score(feats, tags, mask)
+
+        return all_path_score - gold_path_score
+
+    def viterbi_decode(self, logits, mask, unpad=False):
+        r"""给定一个特征矩阵以及转移分数矩阵，计算出最佳的路径以及对应的分数
+        :param torch.FloatTensor logits: batch_size x max_len x num_tags，特征矩阵。
+        :param torch.ByteTensor mask: batch_size x max_len, 为0的位置认为是pad；如果为None，则认为没有padding。
+        :param bool unpad: 是否将结果删去padding。False, 返回的是batch_size x max_len的tensor; True，返回的是
+            List[List[int]], 内部的List[int]为每个sequence的label，已经除去pad部分，即每个List[int]的长度是这
+            个sample的有效长度。
+        :return: 返回 (paths, scores)。
+                    paths: 是解码后的路径, 其值参照unpad参数.
+                    scores: torch.FloatTensor, size为(batch_size,), 对应每个最优路径的分数。
         """
-        time_steps = features.size(0)
-        # 初始化
-        forward = Variable(torch.zeros(self.num_tag))  # 初始化START_TAG的发射分数为0
-        if self.use_cuda:
-            forward = forward.cuda()
-        for i in range(0, time_steps):  # START_TAG -> 1st word -> 2nd word ->...->END_TAG
-            emission_start = forward.expand(self.num_tag, self.num_tag).t()
-            emission_end = features[i, :].expand(self.num_tag, self.num_tag)
-            if i == 0:
-                trans_score = self.transitions[self.start_tag, :self.start_tag].cpu()
-            else:
-                trans_score = self.transitions[:self.start_tag, :self.start_tag].cpu()
-            sum = emission_start + emission_end + (trans_score if not self.use_cuda else trans_score.cuda())
-            forward = log_sum(sum, dim=0)
-        forward = forward + self.transitions[:self.start_tag, self.end_tag]  # END_TAG
-        total_score = log_sum(forward, dim=0)
-        return total_score
+        batch_size, max_len, n_tags = logits.size()
+        seq_len = mask.long().sum(1)
+        logits = logits.transpose(0, 1).data  # L, B, H
+        mask = mask.transpose(0, 1).data.eq(True)  # L, B
+        flip_mask = mask.eq(False)
 
-    def negative_log_loss(self, inputs, length, tags):
-        """
-        features:(batch_size, time_step, num_tag)
-        target_function = P_real_path_score/P_all_possible_path_score
-                        = exp(S_real_path_score)/ sum(exp(certain_path_score))
-        我们希望P_real_path_score的概率越高越好，即target_function的值越大越好
-        因此，loss_function取其相反数，越小越好
-        loss_function = -log(target_function)
-                      = -S_real_path_score + log(exp(S_1 + exp(S_2) + exp(S_3) + ...))
-                      = -S_real_path_score + log(all_possible_path_score)
-        """
-        if not self.use_cuda:
-            inputs = inputs.cpu()
-            length = length.cpu()
-            tags = tags.cpu()
+        # dp
+        vpath = logits.new_zeros((max_len, batch_size, n_tags), dtype=torch.long)
+        vscore = logits[0]  # bsz x n_tags
+        transitions = self._constrain.data.clone()
+        transitions[:n_tags, :n_tags] += self.trans_m.data
+        if self.include_start_end_trans:
+            transitions[n_tags, :n_tags] += self.start_scores.data
+            transitions[:n_tags, n_tags + 1] += self.end_scores.data
 
-        loss = Variable(torch.tensor(0.), requires_grad=True)
-        if self.use_cuda:
-            loss = loss.cuda()
-        num_chars = torch.sum(length.data).float()
-        for ix, (features, tag) in enumerate(zip(inputs, tags)):
-            features = features[:length[ix]]
-            tag = tag[:length[ix]]
-            real_score = self.real_path_score(features, tag)
-            total_score = self.all_possible_path_score(features)
-            cost = total_score - real_score
-            loss = loss + cost
-        return loss / num_chars
+        vscore += transitions[n_tags, :n_tags]
 
-    def viterbi(self, features):
-        time_steps = features.size(0)
-        forward = Variable(torch.zeros(self.num_tag))  # START_TAG
-        if self.use_cuda:
-            forward = forward.cuda()
-        # back_points 到该点的最大分数  last_points 前一个点的索引
-        back_points, index_points = [self.transitions[self.start_tag, :self.start_tag].cpu()], [
-            torch.LongTensor([-1]).expand_as(forward)]
-        for i in range(1, time_steps):  # START_TAG -> 1st word -> 2nd word ->...->END_TAG
-            emission_start = forward.expand(self.num_tag, self.num_tag).t()
-            emission_end = features[i, :].expand(self.num_tag, self.num_tag)
-            trans_score = self.transitions[:self.start_tag, :self.start_tag].cpu()
-            sum = emission_start.cpu() + emission_end.cpu() + trans_score
-            forward, index = torch.max(sum.detach(), dim=0)
-            back_points.append(forward)
-            index_points.append(index)
-        back_points.append(forward + self.transitions[:self.start_tag, self.end_tag].cpu())  # END_TAG
-        return back_points, index_points
+        trans_score = transitions[:n_tags, :n_tags].view(1, n_tags, n_tags).data
+        end_trans_score = transitions[:n_tags, n_tags + 1].view(1, 1, n_tags).repeat(batch_size, 1, 1)  # bsz, 1, n_tags
 
-    def get_best_path(self, features):
-        back_points, index_points = self.viterbi(features)
-        # 找到线头
-        best_last_point = argmax(back_points[-1])
-        index_points = torch.stack(index_points)  # 堆成矩阵
-        m = index_points.size(0)
-        # 初始化矩阵
-        best_path = [best_last_point]
-        # 循着线头找到其对应的最佳路径
-        for i in range(m - 1, 0, -1):
-            best_index_point = index_points[i][best_last_point]
-            best_path.append(best_index_point)
-            best_last_point = best_index_point
-        best_path.reverse()
-        return best_path
+        # 针对长度为1的句子
+        vscore += transitions[:n_tags, n_tags + 1].view(1, n_tags).repeat(batch_size, 1) \
+            .masked_fill(seq_len.ne(1).view(-1, 1), 0)
+        for i in range(1, max_len):
+            prev_score = vscore.view(batch_size, n_tags, 1)
+            cur_score = logits[i].view(batch_size, 1, n_tags) + trans_score
+            score = prev_score + cur_score.masked_fill(flip_mask[i].view(batch_size, 1, 1), 0)  # bsz x n_tag x n_tag
+            # 需要考虑当前位置是该序列的最后一个
+            score += end_trans_score.masked_fill(seq_len.ne(i + 1).view(-1, 1, 1), 0)
 
-    def get_batch_best_path(self, inputs, length):
-        if not self.use_cuda:
-            inputs = inputs.cpu()
-            length = length.cpu()
-        batch_best_path = []
-        max_len = inputs.size(1)
-        for ix, features in enumerate(inputs):
-            features = features[:length[ix]]
-            best_path = self.get_best_path(features)
-            best_path = torch.Tensor(best_path).long()
-            best_path = padding(best_path, max_len)
-            batch_best_path.append(best_path)
-        batch_best_path = torch.stack(batch_best_path, dim=0)
-        return batch_best_path
+            best_score, best_dst = score.max(1)
+            vpath[i] = best_dst
+            # 由于最终是通过last_tags回溯，需要保持每个位置的vscore情况
+            vscore = best_score.masked_fill(flip_mask[i].view(batch_size, 1), 0) + \
+                     vscore.masked_fill(mask[i].view(batch_size, 1), 0)
 
+        # backtrace
+        batch_idx = torch.arange(batch_size, dtype=torch.long, device=logits.device)
+        seq_idx = torch.arange(max_len, dtype=torch.long, device=logits.device)
+        lens = (seq_len - 1)
+        # idxes [L, B], batched idx from seq_len-1 to 0
+        idxes = (lens.view(1, -1) - seq_idx.view(-1, 1)) % max_len
 
-def log_sum(matrix, dim):
-    """
-    前向算法是不断累积之前的结果，这样就会有个缺点
-    指数和累积到一定程度后，会超过计算机浮点值的最大值，变成inf，这样取log后也是inf
-    为了避免这种情况，我们做了改动：
-    1. 用一个合适的值clip去提指数和的公因子，这样就不会使某项变得过大而无法计算
-    SUM = log(exp(s1)+exp(s2)+...+exp(s100))
-        = log{exp(clip)*[exp(s1-clip)+exp(s2-clip)+...+exp(s100-clip)]}
-        = clip + log[exp(s1-clip)+exp(s2-clip)+...+exp(s100-clip)]
-    where clip=max
-    """
-    clip_value = torch.max(matrix)  # 极大值
-    clip_value = int(clip_value.data.tolist())
-    log_sum_value = clip_value + torch.log(torch.sum(torch.exp(matrix - clip_value), dim=dim))
-    return log_sum_value
-
-
-def argmax(matrix, dim=0):
-    """(0.5, 0.4, 0.3)"""
-    _, index = torch.max(matrix, dim=dim)
-    return index
-
-
-def padding(vec, max_len, pad_token=-1):
-    new_vec = torch.zeros(max_len).long()
-    new_vec[:vec.size(0)] = vec
-    new_vec[vec.size(0):] = pad_token
-    return new_vec
+        ans = logits.new_empty((max_len, batch_size), dtype=torch.long)
+        ans_score, last_tags = vscore.max(1)
+        ans[idxes[0], batch_idx] = last_tags
+        for i in range(max_len - 1):
+            last_tags = vpath[idxes[i], batch_idx, last_tags]
+            ans[idxes[i + 1], batch_idx] = last_tags
+        ans = ans.transpose(0, 1)
+        if unpad:
+            paths = []
+            for idx, max_len in enumerate(lens):
+                paths.append(ans[idx, :max_len + 1].tolist())
+        else:
+            paths = ans
+        return paths, ans_score
