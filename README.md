@@ -44,7 +44,7 @@ labels = predictor.predict(texts)
 ## 2. 调参指南
 `Trainer`提供了丰富的参数可供选择
 ### 预训练模型
-你可以快速替换预训练模型，即更改**pretrained_model_dir**参数，目前测试过的中文**预训练模型**包括：
+你可以快速替换预训练模型，即更改`pretrained_model_dir`参数，目前测试过的中文**预训练模型**包括：
 
 - [albert_chinese_base](https://huggingface.co/voidful/albert_chinese_base)
 - [chinese-bert-wwm](https://huggingface.co/hfl/chinese-bert-wwm)
