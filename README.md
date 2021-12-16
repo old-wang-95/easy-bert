@@ -23,6 +23,7 @@ trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch
 predictor = ClassificationPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
+更多代码样例参考：`tests/test_bert4classification.py`
 
 #### 序列标注
 ```python
@@ -40,6 +41,8 @@ trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch
 predictor = SequenceLabelingPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
+
+更多代码样例参考：`tests/test_bert4sequence_labeling.py`
 
 ## 2. 调参指南
 `Trainer`提供了丰富的参数可供选择
@@ -97,7 +100,78 @@ bert模型本身较重，资源受限下，想提高推理速度，知识蒸馏�
 - `DistilBert`：是一个6层的Bert，预训练模型[bert-distil-chinese](https://huggingface.co/adamlin/bert-distil-chinese)在预训练阶段已经进行MLM任务的蒸馏，你可以**直接基于它进行下游任务的微调**；
   - 理论上，推理速度可以获得40%的提升，获得97%的bert-base效果
 - `TinyBert`：[TinyBERT_4L_zh](https://huggingface.co/huawei-noah/TinyBERT_4L_zh)拥有4层、312的hidden_size，一般使用两阶段蒸馏，即下游任务也要蒸馏，可以使用`TinyBertDistiller`实现；
+  - TinyBert微调蒸馏时，向老师的soft label学习、向老师的hidden学习、向老师的embedding学习、向真实的label学习
   - 理论上，4层的TinyBert，能够达到老师（Bert-base）效果的96.8%、参数量缩减为原来的13.3%、仅需要原来10.6%的推理时间
+
+**TinyBert蒸馏：分类**
+```python
+from easy_bert.bert4classification.classification_predictor import ClassificationPredictor
+from easy_bert.bert4classification.classification_trainer import ClassificationTrainer
+from easy_bert.tinybert_distiller import TinyBertDistiller
+
+
+texts = ['天气真好', '今天运气很差']
+labels = ['正面', '负面']
+
+teacher_pretrained = './models/chinese-roberta-wwm-ext'
+teacher_model_dir = './tests/test_model'
+student_pretrained = './models/TinyBERT_4L_zh'
+student_model_dir = './tests/test_model2'
+
+# 训练老师模型
+trainer = ClassificationTrainer(teacher_pretrained, teacher_model_dir)
+trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+# 蒸馏学生
+distiller = TinyBertDistiller(
+    teacher_pretrained, teacher_model_dir, student_pretrained, student_model_dir,
+    task='classification'
+)
+distiller.distill_train(texts, labels, max_len=20, epoch=20, batch_size=2)
+# 加载fine-tune蒸馏过的模型
+predictor = ClassificationPredictor(student_pretrained, student_model_dir)
+print(predictor.predict(texts))
+```
+**TinyBert蒸馏：序列标注**
+```python
+from easy_bert.bert4sequence_labeling.sequence_labeling_predictor import SequenceLabelingPredictor
+from easy_bert.bert4sequence_labeling.sequence_labeling_trainer import SequenceLabelingTrainer
+from easy_bert.tinybert_distiller import TinyBertDistiller
+
+
+texts = [['你', '好', '呀'], ['一', '马', '当', '先', '就', '是', '好']]
+labels = [['B', 'E', 'S'], ['B', 'M', 'M', 'E', 'S', 'S', 'S']]
+
+teacher_pretrained = './models/chinese-roberta-wwm-ext'
+teacher_model_dir = './tests/test_model'
+student_pretrained = './models/TinyBERT_4L_zh'
+student_model_dir = './tests/test_model2'
+
+# 训练老师模型
+trainer = SequenceLabelingTrainer(teacher_pretrained, teacher_model_dir, loss_type='crf_loss')
+trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+# 蒸馏学生
+distiller = TinyBertDistiller(
+    teacher_pretrained, teacher_model_dir, student_pretrained, student_model_dir,
+    task='sequence_labeling', hard_label_loss='crf_loss'
+)
+distiller.distill_train(texts, labels, max_len=20, epoch=20, batch_size=2)
+# 加载fine-tune蒸馏过的模型
+predictor = SequenceLabelingPredictor(student_pretrained, student_model_dir)
+print(predictor.predict(texts))
+```
+更多代码样例参考：`tests/test_tinybert_distiller.py`
+
+关于`TinyBertDistiller`蒸馏参数：
+
+- `task`：可选`classification` or `sequence_labeling`；
+- `enable_parallel`：是否并行，默认`False`。注意，启用并行可能会导致蒸馏速度变慢；
+- `hard_label_loss`：即针对label的loss计算，设置同`Trainer`的`loss_type`参数。默认`cross_entropy_loss`，序列标注推荐`crf_loss`；
+- `temperature`：蒸馏温度系数，一般大于`1`较好，默认为`4`，可在`1~10`之间调试；
+- `hard_label_weight`：hard label的loss权重，默认为`1`；
+- `kd_loss_type`：soft label的loss类型，即向老师的输出概率学习，默认为`ce`，即交叉熵；
+- `kd_loss_weight`：kd_loss的权重，可以稍微放大其权重，即加强向老师的soft label学习，默认为`1.2`；
+- `lr`：蒸馏学习率，一般设置较大，这里默认`1e-4`；
+- `ckpt_frequency`：一个epoch存ckpt_frequency次模型，默认为`1`；
 
 ### 随机种子
 你可以设置`random_seed`，来控制随机种子，默认`random_seed=0`。
