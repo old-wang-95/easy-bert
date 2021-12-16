@@ -5,7 +5,7 @@ easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参�
 上手前，请**确保**：
 
 1. 已从hugging face官网下载好[chinese-roberta-wwm-ext](https://huggingface.co/hfl/chinese-bert-wwm-ext)，保存到某个目录，如：`./models/chinese-roberta-wwm-ext`；
-2. 创建好你将要保存模型的目录，如：`/models/my_model`；
+2. 创建好你将要保存模型的目录，如：`./models/your_model`；
 
 #### 分类任务
 ```python
