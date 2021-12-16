@@ -161,7 +161,7 @@ print(predictor.predict(texts))
 ```
 更多代码样例参考：`tests/test_tinybert_distiller.py`
 
-关于`TinyBertDistiller`蒸馏参数：
+**关于`TinyBertDistiller`蒸馏参数**：
 
 - `task`：可选`classification` or `sequence_labeling`；
 - `enable_parallel`：是否并行，默认`False`。注意，启用并行可能会导致蒸馏速度变慢；
