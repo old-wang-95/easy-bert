@@ -79,8 +79,8 @@ dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成�
 这里支持以下loss，通过`loss_type`参数来设置：
 
 - `cross_entropy_loss`：标准的交叉熵loss，**`ClassificationTrainer`默认**；
-- `label_smoothing_loss`：标签平滑loss，在label层面增加噪声，使用soft label替代hard label，缓解过拟合；
-- `focal_loss`：focal loss在类别不均衡时比较有用，它允许为不同的label设置代价权重，并对简单的样本进行打压。
+- `label_smoothing_loss`：标签平滑loss，在label层面增加噪声，使用soft label替代hard label，**缓解过拟合**；
+- `focal_loss`：**focal loss在类别不均衡时比较有用**，它允许为不同的label设置代价权重，并对简单的样本进行打压。
   - 你可以进一步设置`focal_loss_gamma`和`focal_loss_alpha`，默认`focal_loss_gamma=2` `focal_loss_alpha=None`
-  - 设置`focal_loss_alpha`时，请确保它是一个标签权重分布，如：三分类设置`focal_loss_alpha=[1, 1, 1.5]`，表示我们更关注label_id为2的标签，因为它的样本数更少；
-- `crf_loss`：crf层学习标签与标签之间的转移，仅支持序列标注任务，**`SequenceLabelingTrainer`默认**；
+  - 设置`focal_loss_alpha`时，请**确保它是一个标签权重分布**，如：三分类设置`focal_loss_alpha=[1, 1, 1.5]`，表示我们更关注label_id为2的标签，因为它的样本数更少；
+- `crf_loss`：**crf层学习标签与标签之间的转移**，仅支持序列标注任务，**`SequenceLabelingTrainer`默认**；
