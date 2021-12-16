@@ -108,7 +108,7 @@ class SequenceLabelingModel(nn.Module):
                 loss = FocalLoss(gamma=self.focal_loss_gamma, alpha=self.focal_loss_alpha)(active_logits, active_labels)
             else:
                 loss = LabelSmoothingCrossEntropy(alpha=0.1, ignore_index=-1)(active_logits, active_labels)
-            return best_paths, loss if not return_extra else (best_paths, loss, extra)
+            return (best_paths, loss) if not return_extra else (best_paths, loss, extra)
 
         return best_paths if not return_extra else (best_paths, extra)
 
