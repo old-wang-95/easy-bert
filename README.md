@@ -13,14 +13,14 @@ from easy_bert.bert4classification.classification_predictor import Classificatio
 from easy_bert.bert4classification.classification_trainer import ClassificationTrainer
 
 
-pretrained_model_dir, your_model_idr = './models/chinese-roberta-wwm-ext', './models/my_model'
+pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './models/your_model'
 texts = ['天气真好', '今天运气很差']
 labels = ['正面', '负面']
 
-trainer = ClassificationTrainer(pretrained_model_dir, your_model_idr)
+trainer = ClassificationTrainer(pretrained_model_dir, your_model_dir)
 trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
 
-predictor = ClassificationPredictor(pretrained_model_dir, your_model_idr)
+predictor = ClassificationPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
@@ -30,14 +30,14 @@ from easy_bert.bert4sequence_labeling.sequence_labeling_predictor import Sequenc
 from easy_bert.bert4sequence_labeling.sequence_labeling_trainer import SequenceLabelingTrainer
 
 
-pretrained_model_dir, your_model_idr = './models/chinese-roberta-wwm-ext', './models/my_model'
+pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './models/your_model'
 texts = [['你', '好', '呀'],['一', '马', '当', '先', '就', '是', '好']]
 labels = [['B', 'E', 'S'],['B', 'M', 'M', 'E', 'S', 'S', 'S']]
 
-trainer = SequenceLabelingTrainer(pretrained_model_dir, your_model_idr)
+trainer = SequenceLabelingTrainer(pretrained_model_dir, your_model_dir)
 trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
         
-predictor = SequenceLabelingPredictor(pretrained_model_dir, your_model_idr)
+predictor = SequenceLabelingPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
