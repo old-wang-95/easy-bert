@@ -121,12 +121,14 @@ student_model_dir = './tests/test_model2'
 # 训练老师模型
 trainer = ClassificationTrainer(teacher_pretrained, teacher_model_dir)
 trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
 # 蒸馏学生
 distiller = TinyBertDistiller(
     teacher_pretrained, teacher_model_dir, student_pretrained, student_model_dir,
     task='classification'
 )
 distiller.distill_train(texts, labels, max_len=20, epoch=20, batch_size=2)
+
 # 加载fine-tune蒸馏过的模型
 predictor = ClassificationPredictor(student_pretrained, student_model_dir)
 print(predictor.predict(texts))
@@ -149,12 +151,14 @@ student_model_dir = './tests/test_model2'
 # 训练老师模型
 trainer = SequenceLabelingTrainer(teacher_pretrained, teacher_model_dir, loss_type='crf_loss')
 trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
 # 蒸馏学生
 distiller = TinyBertDistiller(
     teacher_pretrained, teacher_model_dir, student_pretrained, student_model_dir,
     task='sequence_labeling', hard_label_loss='crf_loss'
 )
 distiller.distill_train(texts, labels, max_len=20, epoch=20, batch_size=2)
+
 # 加载fine-tune蒸馏过的模型
 predictor = SequenceLabelingPredictor(student_pretrained, student_model_dir)
 print(predictor.predict(texts))
