@@ -1,11 +1,26 @@
 # easy-bert
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
+**目录**
+1. [极速上手](#1-极速上手)
+   - [分类任务](#分类任务)
+   - [序列标注](#序列标注)
+2. [调参指南](#2-调参指南)
+   - [预训练模型](#预训练模型)
+   - [学习率](#学习率)
+   - [并行](#并行)
+   - [对抗训练](#对抗训练)
+   - [dropout_rate](#dropout_rate)
+   - [loss](#loss)
+   - [长文本](#长文本)
+   - [知识蒸馏](#知识蒸馏)
+   - [随机种子](#随机种子)
+
 ## 1. 极速上手
 上手前，请**确保**：
 
 1. 已从hugging face官网下载好[chinese-roberta-wwm-ext](https://huggingface.co/hfl/chinese-bert-wwm-ext)，保存到某个目录，如：`./models/chinese-roberta-wwm-ext`；
-2. 创建好你将要保存模型的目录，如：`./models/your_model`；
+2. 创建好你将要保存模型的目录，如：`./tests/test_model`；
 
 #### 分类任务
 ```python
@@ -13,7 +28,7 @@ from easy_bert.bert4classification.classification_predictor import Classificatio
 from easy_bert.bert4classification.classification_trainer import ClassificationTrainer
 
 
-pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './models/your_model'
+pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './tests/test_model'
 texts = ['天气真好', '今天运气很差']
 labels = ['正面', '负面']
 
@@ -31,7 +46,7 @@ from easy_bert.bert4sequence_labeling.sequence_labeling_predictor import Sequenc
 from easy_bert.bert4sequence_labeling.sequence_labeling_trainer import SequenceLabelingTrainer
 
 
-pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './models/your_model'
+pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './tests/test_model'
 texts = [['你', '好', '呀'],['一', '马', '当', '先', '就', '是', '好']]
 labels = [['B', 'E', 'S'],['B', 'M', 'M', 'E', 'S', 'S', 'S']]
 
