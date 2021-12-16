@@ -84,3 +84,17 @@ dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成�
   - 你可以进一步设置`focal_loss_gamma`和`focal_loss_alpha`，默认`focal_loss_gamma=2` `focal_loss_alpha=None`
   - 设置`focal_loss_alpha`时，请**确保它是一个标签权重分布**，如：三分类设置`focal_loss_alpha=[1, 1, 1.5]`，表示我们更关注label_id为2的标签，因为它的样本数更少；
 - `crf_loss`：**crf层学习标签与标签之间的转移**，仅支持序列标注任务，**`SequenceLabelingTrainer`默认**；
+
+### 长文本
+Bert的输入最多为512字，如果待处理的文本超过512字，你可以**截断**或者**分段**输入模型，也可以尝试Longformer模型：[longformer-chinese-base-4096](https://huggingface.co/schen/longformer-chinese-base-4096)，它使用稀疏自注意力，降低了自注意力的时空复杂度，将模型处理长度扩张到了`4096`
+
+### 知识蒸馏
+bert模型本身较重，资源受限下，想提高推理速度，知识蒸馏是一个不错的选择。
+
+这里可以选择：
+
+- `DistilBert`：是一个6层的Bert，预训练模型[bert-distil-chinese](https://huggingface.co/adamlin/bert-distil-chinese)在预训练阶段已经进行MLM任务的蒸馏，你可以**直接基于它进行下游任务的微调**；
+  - 理论上，推理速度可以获得40%的提升，获得97%的bert-base效果
+- `TinyBert`：[TinyBERT_4L_zh](https://huggingface.co/huawei-noah/TinyBERT_4L_zh)拥有4层、312的hidden_size，一般使用两阶段蒸馏，即下游任务也要蒸馏，可以使用`TinyBertDistiller`实现
+  - 理论上，4层的TinyBert，能够达到老师（Bert-base）效果的96.8%、参数量缩减为原来的13.3%、仅需要原来10.6%的推理时间
+
