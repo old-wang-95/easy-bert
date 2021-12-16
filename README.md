@@ -113,10 +113,8 @@ from easy_bert.tinybert_distiller import TinyBertDistiller
 texts = ['天气真好', '今天运气很差']
 labels = ['正面', '负面']
 
-teacher_pretrained = './models/chinese-roberta-wwm-ext'
-teacher_model_dir = './tests/test_model'
-student_pretrained = './models/TinyBERT_4L_zh'
-student_model_dir = './tests/test_model2'
+teacher_pretrained, teacher_model_dir = './models/chinese-roberta-wwm-ext', './tests/test_model'
+student_pretrained, student_model_dir= './models/TinyBERT_4L_zh', './tests/test_model2'
 
 # 训练老师模型
 trainer = ClassificationTrainer(teacher_pretrained, teacher_model_dir)
@@ -143,10 +141,8 @@ from easy_bert.tinybert_distiller import TinyBertDistiller
 texts = [['你', '好', '呀'], ['一', '马', '当', '先', '就', '是', '好']]
 labels = [['B', 'E', 'S'], ['B', 'M', 'M', 'E', 'S', 'S', 'S']]
 
-teacher_pretrained = './models/chinese-roberta-wwm-ext'
-teacher_model_dir = './tests/test_model'
-student_pretrained = './models/TinyBERT_4L_zh'
-student_model_dir = './tests/test_model2'
+teacher_pretrained, teacher_model_dir = './models/chinese-roberta-wwm-ext', './tests/test_model'
+student_pretrained, student_model_dir= './models/TinyBERT_4L_zh', './tests/test_model2'
 
 # 训练老师模型
 trainer = SequenceLabelingTrainer(teacher_pretrained, teacher_model_dir, loss_type='crf_loss')
