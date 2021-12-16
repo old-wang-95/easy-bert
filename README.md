@@ -176,6 +176,7 @@ print(predictor.predict(texts))
 - `kd_loss_weight`：kd_loss的权重，可以稍微放大其权重，即加强向老师的soft label学习，默认为`1.2`；
 - `lr`：蒸馏学习率，一般设置较大，这里默认`1e-4`；
 - `ckpt_frequency`：一个epoch存ckpt_frequency次模型，默认为`1`；
+- `epoch`：迭代轮数，一般蒸馏时设置较大的epoch，如`20~50`，默认为`20`；
 
 ### 随机种子
 你可以设置`random_seed`，来控制随机种子，默认`random_seed=0`。
