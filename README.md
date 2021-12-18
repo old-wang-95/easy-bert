@@ -6,10 +6,10 @@
 2. [调参指南](#2-调参指南)
    - [预训练模型](#预训练模型)
    - [学习率](#学习率)
-   - [并行](#并行)
+   - [并行训练](#并行训练)
    - [对抗训练](#对抗训练)
    - [dropout_rate](#dropout_rate)
-   - [loss](#loss)
+   - [loss选择](#loss选择)
    - [长文本](#长文本)
    - [知识蒸馏](#知识蒸馏)
    - [随机种子](#随机种子)
@@ -80,7 +80,7 @@ labels = predictor.predict(texts)
 ### 学习率
 bert微调一般使用较小的学习率`learning_rate`，如：`5e-5`, `3e-5`, `2e-5`
 
-### 并行
+### 并行训练
 可以为Trainer或Predictor设置`enable_parallel=True`，加速训练或推理。启用后，默认使用单机上的所有GPU。
 
 ### 对抗训练
@@ -94,7 +94,7 @@ bert微调一般使用较小的学习率`learning_rate`，如：`5e-5`, `3e-5`, 
 ### dropout_rate
 dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成学习的思想，默认`dropout_rate=0.5`
 
-### loss
+### loss选择
 这里支持以下loss，通过`loss_type`参数来设置：
 
 - `cross_entropy_loss`：标准的交叉熵loss，**`ClassificationTrainer`默认**；
