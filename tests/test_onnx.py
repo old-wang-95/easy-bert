@@ -45,7 +45,7 @@ class MyTestCase(unittest.TestCase):
             ['B', 'M', 'M', 'E', 'S', 'S', 'S']
         ]
         trainer = SequenceLabelingTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
-                                          loss_type='cross_entropy_loss')  # crf loss转onnx暂时有点问题
+                                          loss_type='cross_entropy_loss')  # crf层转onnx暂时有点问题
         trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
 
         # 测试torch模型速度
