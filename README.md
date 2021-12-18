@@ -13,6 +13,7 @@
    - [长文本](#长文本)
    - [知识蒸馏](#知识蒸馏)
    - [随机种子](#随机种子)
+   - [转ONNX](#转ONNX)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -191,3 +192,11 @@ print(predictor.predict(texts))
 
 ### 随机种子
 你可以设置`random_seed`，来控制随机种子，默认`random_seed=0`。
+
+### 转ONNX
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`test/test_onnx.py`。
+
+这里**注意**：
+1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`requirements.txt`；
+2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考
+    https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
