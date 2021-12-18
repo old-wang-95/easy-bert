@@ -194,7 +194,7 @@ print(predictor.predict(texts))
 你可以设置`random_seed`，来控制随机种子，默认`random_seed=0`。
 
 ### 转ONNX
-可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`test/test_onnx.py`。
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`tests/test_onnx.py`。
 
 这里**注意**：
 1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`requirements.txt`；
