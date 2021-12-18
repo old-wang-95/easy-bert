@@ -6,13 +6,14 @@
 2. [调参指南](#2-调参指南)
    - [预训练模型](#预训练模型)
    - [学习率](#学习率)
-   - [并行](#并行)
+   - [并行训练](#并行训练)
    - [对抗训练](#对抗训练)
    - [dropout_rate](#dropout_rate)
-   - [loss](#loss)
+   - [loss选择](#loss选择)
    - [长文本](#长文本)
    - [知识蒸馏](#知识蒸馏)
    - [随机种子](#随机种子)
+   - [ONNX硬件加速](#ONNX硬件加速)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -79,7 +80,7 @@ labels = predictor.predict(texts)
 ### 学习率
 bert微调一般使用较小的学习率`learning_rate`，如：`5e-5`, `3e-5`, `2e-5`
 
-### 并行
+### 并行训练
 可以为Trainer或Predictor设置`enable_parallel=True`，加速训练或推理。启用后，默认使用单机上的所有GPU。
 
 ### 对抗训练
@@ -93,7 +94,7 @@ bert微调一般使用较小的学习率`learning_rate`，如：`5e-5`, `3e-5`, 
 ### dropout_rate
 dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成学习的思想，默认`dropout_rate=0.5`
 
-### loss
+### loss选择
 这里支持以下loss，通过`loss_type`参数来设置：
 
 - `cross_entropy_loss`：标准的交叉熵loss，**`ClassificationTrainer`默认**；
@@ -191,3 +192,11 @@ print(predictor.predict(texts))
 
 ### 随机种子
 你可以设置`random_seed`，来控制随机种子，默认`random_seed=0`。
+
+### ONNX硬件加速
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`tests/test_onnx.py`。
+
+这里**注意**：
+1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`requirements.txt`；
+2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考：
+    https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
