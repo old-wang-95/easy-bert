@@ -2,6 +2,8 @@ import json
 import math
 
 import torch
+import torch.onnx
+from onnxruntime import InferenceSession
 from torch.nn import DataParallel
 
 from easy_bert.base.base_predictor import BasePredictor
@@ -25,6 +27,10 @@ class SequenceLabelingPredictor(BasePredictor):
         self._load_config()
         self.vocab.load_vocab('{}/{}'.format(model_dir, vocab_name))
         self._load_model()
+
+        # onnx相关配置
+        self.is_onnx_model = False  # 当前模型是否为onnx模型
+        self.onnx_model = None  # onnx_model初始化为None
 
     def _load_config(self):
         """json加载训练config"""
@@ -95,7 +101,15 @@ class SequenceLabelingPredictor(BasePredictor):
 
             # 推理，并将结果解析为原始label
             with torch.no_grad():
-                best_paths = self.model(batch_input_ids, batch_att_mask)
+                if self.is_onnx_model:  # onnx model推理
+                    best_paths = self.onnx_model.run(
+                        ['output'],  # 设置输出names
+                        # feed输入，并转化为numpy数组
+                        {'input1': batch_input_ids.cpu().numpy(), 'input2': batch_att_mask.cpu().numpy()}
+                    )[0]
+                    best_paths = torch.IntTensor(best_paths).to(self.device)  # numpy数组转为tensor，保持接口一致
+                else:  # torch模型推理
+                    best_paths = self.model(batch_input_ids, batch_att_mask)
                 for best_path, att_mask in zip(best_paths, batch_att_mask):
                     active_labels = best_path[att_mask == 1][1:-1]  # 截掉pad、[CLS]、[SEP]部分
                     labels = [self.vocab.id2tag[label_id.item()] for label_id in active_labels]
@@ -107,3 +121,36 @@ class SequenceLabelingPredictor(BasePredictor):
         """根据是否并行，获取bert_tokenizer"""
         bert_tokenizer = self.model.bert_tokenizer if not self.enable_parallel else self.model.module.bert_tokenizer
         return bert_tokenizer
+
+    def transform2onnx(self):
+        """将模型转换为onnx模型"""
+        assert not self.is_onnx_model, 'error, curl model is already onnx model!'
+
+        # 定义伪输入，让onnx做一遍推理，构建静态计算图
+        dummy_inputs = torch.LongTensor([[i for i in range(200)]])
+        dummy_att_masks = torch.LongTensor([[1 for _ in range(200)]])
+        dummy_inputs, dummy_att_masks = dummy_inputs.to(self.device), dummy_att_masks.to(self.device)
+
+        # 将模型导出为onnx标准
+        torch.onnx.export(
+            self.model, (dummy_inputs, dummy_att_masks),
+            '{}/model.onnx'.format(self.model_dir),
+            # 设置model的输入输出，参考SequenceLabelingModel.forward函数签名
+            input_names=['input1', 'input2'], output_names=['output'],  # 两个输入，一个输出
+            # 设置batch、seq_len维度可变
+            dynamic_axes={
+                'input1': {0: 'batch', 1: 'seq'}, 'input2': {0: 'batch', 1: 'seq'}, 'output': {0: 'batch', 1: 'seq'}},
+            opset_version=10,
+        )
+
+        # 加载onnx model
+        self._load_onnx_model()
+
+    def _load_onnx_model(self):
+        """加载onnx model"""
+        # 通过InferenceSession，加载onnx模型
+        self.onnx_model = InferenceSession('{}/model.onnx'.format(self.model_dir))
+        self.onnx_model.get_modelmeta()
+
+        # 更新is_cur_onnx_model状态
+        self.is_onnx_model = True
