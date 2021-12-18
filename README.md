@@ -198,5 +198,5 @@ print(predictor.predict(texts))
 
 这里**注意**：
 1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`requirements.txt`；
-2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考
+2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考：
     https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
