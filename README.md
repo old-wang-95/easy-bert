@@ -1,9 +1,10 @@
 # easy-bert
 
-1. [极速上手](#1-极速上手)
+1. [安装](#1-安装)
+2. [极速上手](#2-极速上手)
     - [分类任务](#分类任务)
     - [序列标注](#序列标注)
-2. [调参指南](#2-调参指南)
+3. [调参指南](#3-调参指南)
     - [预训练模型](#预训练模型)
     - [学习率](#学习率)
     - [并行训练](#并行训练)
@@ -21,16 +22,16 @@ easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参�
 
 主要支持两种安装方法：
 
-1.  **PYPI安装**：
+1. **PYPI安装**：
    `pip install easy-zh-bert`
 
-    注意：因为和别的库重名，上传到pypi上的名字为**easy-zh-bert**
-2.  **Github源码安装**：
+   注意：因为和别的库重名，上传到pypi上的名字为**easy-zh-bert**
+2. **Github源码安装**：
     - `pip install git+https://github.com/waking95/easy-bert.git`
     - 可以指定具体的版本，如`0.3.0`，即：
       `pip install git+https://github.com/waking95/easy-bert.git@v0.3.0`
 
-## 1. 极速上手
+## 2. 极速上手
 
 上手前，请**确保**：
 
@@ -76,7 +77,7 @@ labels = predictor.predict(texts)
 
 更多代码样例参考：`tests/test_bert4sequence_labeling.py`
 
-## 2. 调参指南
+## 3. 调参指南
 
 `Trainer`提供了丰富的参数可供选择
 
