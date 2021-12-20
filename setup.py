@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='easy-bert',
-    version='0.2.0',
+    version='0.3.0',
     author='waking95',
     author_email="wang0624@foxmail.com",
     license='MIT',
