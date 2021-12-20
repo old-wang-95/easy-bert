@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='easy-bert',
-    version='0.3.0',
+    name='easy-zh-bert',
+    version='0.4.0',
     author='waking95',
     author_email="wang0624@foxmail.com",
     license='MIT',
@@ -20,5 +20,14 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     packages=find_packages(),
-    install_requires=open('requirements.txt').read().strip().split('\n'),
+    install_requires=[
+        'torch == 1.4.0',
+        'transformers == 3.1.0',
+        'scikit-learn == 0.24.0',
+        'numpy == 1.17.0',
+        'datasets == 1.16.0',
+        'textbrewer == 0.2.0',
+        # 'onnxruntime==1.4.0',
+        'onnxruntime-gpu == 1.4.0',
+    ],
 )
