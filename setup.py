@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='easy-bert',
-    version='0.1.0',
+    version='0.2.0',
     author='waking95',
     author_email="wang0624@foxmail.com",
     description="easy-bert是一个中文NLP工具，提供诸多bert变体调用和调参方法，极速上手；清晰的设计和代码注释，也很适合学习",
