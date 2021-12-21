@@ -57,7 +57,7 @@ predictor = ClassificationPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
-更多代码样例参考：`tests/test_bert4classification.py`
+更多代码样例参考：[tests/test_bert4classification.py](tests/test_bert4classification.py)
 
 #### 序列标注
 
@@ -76,7 +76,7 @@ predictor = SequenceLabelingPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
-更多代码样例参考：`tests/test_bert4sequence_labeling.py`
+更多代码样例参考：[tests/test_bert4sequence_labeling.py](tests/test_bert4sequence_labeling.py)
 
 ## 3. 调参指南
 
@@ -208,7 +208,7 @@ predictor = SequenceLabelingPredictor(student_pretrained, student_model_dir)
 print(predictor.predict(texts))
 ```
 
-更多代码样例参考：`tests/test_tinybert_distiller.py`
+更多代码样例参考：[tests/test_tinybert_distiller.py](tests/test_tinybert_distiller.py)
 
 **关于`TinyBertDistiller`蒸馏参数**：
 
@@ -229,7 +229,7 @@ print(predictor.predict(texts))
 
 ### ONNX硬件加速
 
-可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`tests/test_onnx.py`。
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考[tests/test_onnx.py](tests/test_onnx.py)。
 
 这里**注意**：
 
