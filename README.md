@@ -249,6 +249,6 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
   - 可以设置为`linear`，表示线性学习率，lr曲线为 <img src="./docs/images/linear_warmup.png" width=500>
 - `warmup_step_num`：增加阶段，需要多少步到达设置的lr（上图中峰值）；
   - 可以为`int`类型，表示步数；
-  - 也可以为`float`类型，表示总步数的比例，`总步数=batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
+  - 也可以为`float`类型，表示总步数的比例，`总步数 = batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
 
 更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
