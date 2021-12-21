@@ -1,8 +1,6 @@
 import unittest
 
-from easy_bert.bert4classification.classification_predictor import ClassificationPredictor
 from easy_bert.bert4classification.classification_trainer import ClassificationTrainer
-from easy_bert.bert4sequence_labeling.sequence_labeling_predictor import SequenceLabelingPredictor
 from easy_bert.bert4sequence_labeling.sequence_labeling_trainer import SequenceLabelingTrainer
 
 
@@ -34,6 +32,31 @@ class MyTestCase(unittest.TestCase):
         print("warmup_type='cosine'")
         trainer = ClassificationTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
                                         warmup_type='cosine', warmup_step_num=10)
+        trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
+    def test_sequence_labeling(self):
+        print('test_sequence_labeling~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        texts = [['你', '好', '呀'], ['一', '马', '当', '先', '就', '是', '好']]
+        labels = [['B', 'E', 'S'], ['B', 'M', 'M', 'E', 'S', 'S', 'S']]
+
+        print("warmup_type=None")
+        trainer = SequenceLabelingTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
+                                          warmup_type=None)
+        trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
+        print("warmup_type='constant'")
+        trainer = SequenceLabelingTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
+                                          warmup_type='constant', warmup_step_num=0.5)
+        trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
+        print("warmup_type='linear'")
+        trainer = SequenceLabelingTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
+                                          warmup_type='linear', warmup_step_num=10)
+        trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+
+        print("warmup_type='cosine'")
+        trainer = SequenceLabelingTrainer(self.pretrained_model_dir, self.model_dir, learning_rate=5e-5,
+                                          warmup_type='cosine', warmup_step_num=10)
         trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
 
 

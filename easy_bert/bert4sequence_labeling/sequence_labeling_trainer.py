@@ -8,6 +8,8 @@ import torch
 from sklearn.utils import shuffle
 from torch.nn import DataParallel
 from transformers import AdamW
+from transformers import get_constant_schedule_with_warmup, get_cosine_schedule_with_warmup, \
+    get_linear_schedule_with_warmup
 
 from easy_bert import logger
 from easy_bert.adversarial import FGM, PGD
@@ -20,7 +22,7 @@ class SequenceLabelingTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='crf_loss', crf_learning_rate=None, focal_loss_gamma=2, focal_loss_alpha=None,
-                 random_seed=0):
+                 random_seed=0, warmup_type=None, warmup_step_num=10):
         self.pretrained_model_dir = pretrained_model_dir
         self.model_dir = model_dir
         self.ckpt_name = ckpt_name
@@ -46,6 +48,12 @@ class SequenceLabelingTrainer(BaseTrainer):
         self.learning_rate = learning_rate
         self.batch_size = None
         self.epoch = None
+
+        # warmup配置
+        assert warmup_type in ('constant', 'cosine', 'linear', None)
+        assert type(warmup_step_num) in (int, float)
+        self.warmup_type = warmup_type
+        self.warmup_step_num = warmup_step_num
 
         self.vocab = Vocab()
 
@@ -171,6 +179,20 @@ class SequenceLabelingTrainer(BaseTrainer):
             logger.info('enable adversarial training')
             adv = FGM(self.model) if self.adversarial == 'fgm' else PGD(self.model)
 
+        # 根据warmup配置，设置warmup
+        if self.warmup_type:
+            total_steps = len(train_texts) // batch_size * epoch
+            num_warmup_steps = self.warmup_step_num if isinstance(self.warmup_step_num, int) else \
+                int(total_steps * self.warmup_step_num)
+            assert num_warmup_steps <= total_steps, \
+                'num_warmup_steps {} is too large, more than total_steps {}'.format(num_warmup_steps, total_steps)
+            if self.warmup_type == 'linear':
+                warmup_scheduler = get_linear_schedule_with_warmup(self.optimizer, num_warmup_steps, total_steps)
+            elif self.warmup_type == 'cosine':
+                warmup_scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps, total_steps)
+            else:
+                warmup_scheduler = get_constant_schedule_with_warmup(self.optimizer, num_warmup_steps)
+
         for epoch in range(epoch):
             for batch_idx in range(math.ceil(len(train_texts) / batch_size)):
                 text_batch = train_texts[batch_size * batch_idx: batch_size * (batch_idx + 1)]
@@ -200,6 +222,10 @@ class SequenceLabelingTrainer(BaseTrainer):
 
                 # 更新参数
                 self.optimizer.step()
+
+                # 如果启用warmup，更新lr
+                if self.warmup_type:
+                    warmup_scheduler.step()
 
                 # 计算train acc、valid acc
                 train_acc = self._get_acc_one_step(best_paths, batch_label_ids)
