@@ -244,13 +244,11 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
 
 可以通过`Trainer`的参数来控制warmup：
 - `warmup_type`：声明warmup的种类，默认为`None`，表示不启用warmup，即学习率恒定；
-  - 可以设置为`constant`，表示使用恒定学习率，lr曲线为<img src="./docs/images/constant_warmup.png" width=400>
-  - 可以设置为`cosine`，表示余弦曲线学习率，lr曲线为<img src="./docs/images/cosine_warmup.png" width=400>
-  - 可以设置为`linear`，表示线性学习率，lr曲线为<img src="./docs/images/linear_warmup.png" width=400>
+  - 可以设置为`constant`，表示使用恒定学习率，lr曲线为 <img src="./docs/images/constant_warmup.png" width=400>
+  - 可以设置为`cosine`，表示余弦曲线学习率，lr曲线为 <img src="./docs/images/cosine_warmup.png" width=400>
+  - 可以设置为`linear`，表示线性学习率，lr曲线为 <img src="./docs/images/linear_warmup.png" width=400>
 - `warmup_step_num`：增加阶段，多少步到达设置的lr；
   - 可以为`int`类型，表示步数；
   - 也可以为`float`类型，表示总步数的比例。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
 
 更多代码样例参考`tests/test_warmup.py`。
-
-<img src="./docs/images/constant_warmup.png">
