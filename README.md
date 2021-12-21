@@ -251,4 +251,4 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
   - 可以为`int`类型，表示步数；
   - 也可以为`float`类型，表示总步数的比例，`总步数=batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
 
-更多代码样例参考`tests/test_warmup.py`。
+更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
