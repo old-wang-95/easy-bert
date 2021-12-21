@@ -15,6 +15,7 @@
     - [知识蒸馏](#知识蒸馏)
     - [随机种子](#随机种子)
     - [ONNX硬件加速](#ONNX硬件加速)
+    - [warmup](#warmup)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -56,7 +57,7 @@ predictor = ClassificationPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
-更多代码样例参考：`tests/test_bert4classification.py`
+更多代码样例参考：[tests/test_bert4classification.py](tests/test_bert4classification.py)
 
 #### 序列标注
 
@@ -75,7 +76,7 @@ predictor = SequenceLabelingPredictor(pretrained_model_dir, your_model_dir)
 labels = predictor.predict(texts)
 ```
 
-更多代码样例参考：`tests/test_bert4sequence_labeling.py`
+更多代码样例参考：[tests/test_bert4sequence_labeling.py](tests/test_bert4sequence_labeling.py)
 
 ## 3. 调参指南
 
@@ -207,7 +208,7 @@ predictor = SequenceLabelingPredictor(student_pretrained, student_model_dir)
 print(predictor.predict(texts))
 ```
 
-更多代码样例参考：`tests/test_tinybert_distiller.py`
+更多代码样例参考：[tests/test_tinybert_distiller.py](tests/test_tinybert_distiller.py)
 
 **关于`TinyBertDistiller`蒸馏参数**：
 
@@ -228,10 +229,26 @@ print(predictor.predict(texts))
 
 ### ONNX硬件加速
 
-可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考`tests/test_onnx.py`。
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考 [tests/test_onnx.py](tests/test_onnx.py)。
 
 这里**注意**：
 
-1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`setup.py`里`setup`函数的`install_requires`参数；
+1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见 [setup.py](setup.py) 里`setup`函数的`install_requires`参数；
 2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考：
    https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
+
+### warmup
+warmup使用**动态的学习率**（一般lr先增大 后减小），
+- lr一开始别太大，有助于缓解模型在初始阶段，对前几个batch数据过拟合；
+- lr后面小一点，有助于模型后期的稳定；
+
+可以通过`Trainer`的参数来控制warmup：
+- `warmup_type`：声明warmup的种类，默认为`None`，表示不启用warmup，即学习率恒定；
+  - 可以设置为`constant`，表示使用恒定学习率，lr曲线为 <img src="./docs/images/constant_warmup.png" width=500>
+  - 可以设置为`cosine`，表示余弦曲线学习率，lr曲线为 <img src="./docs/images/cosine_warmup.png" width=500>
+  - 可以设置为`linear`，表示线性学习率，lr曲线为 <img src="./docs/images/linear_warmup.png" width=500>
+- `warmup_step_num`：增加阶段，需要多少步到达设置的lr（上图中峰值）；
+  - 可以为`int`类型，表示步数；
+  - 也可以为`float`类型，表示总步数的比例，`总步数=batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
+
+更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
