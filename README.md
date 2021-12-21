@@ -229,11 +229,11 @@ print(predictor.predict(texts))
 
 ### ONNX硬件加速
 
-可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考[tests/test_onnx.py](tests/test_onnx.py)。
+可以将torch模型转为ONNX格式，通过微软的onnxruntime实现**推理阶段的硬件加速**，调用`Predictor`的`transform2onnx()`可以实现转换，代码样例参考 [tests/test_onnx.py](tests/test_onnx.py)。
 
 这里**注意**：
 
-1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`setup.py`里`setup`函数的`install_requires`参数；
+1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见 [setup.py](setup.py) 里`setup`函数的`install_requires`参数；
 2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考：
    https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
 
