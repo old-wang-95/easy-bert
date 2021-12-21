@@ -131,6 +131,8 @@ dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成�
 - `crf_loss`：**crf层学习标签与标签之间的转移**，仅支持序列标注任务，**`SequenceLabelingTrainer`默认**；
     - 你可以进一步设置`crf_learning_rate`，**一般crf层会使用大一点的学习率**，确保转移矩阵学好，默认`crf_learning_rate=None`，表示会使用10倍的`learning_rate`；
 
+更多代码样例参考：[tests/test_bert4classification.py](tests/test_bert4classification.py#L44) [tests/test_bert4sequence_labeling.py](tests/test_bert4sequence_labeling.py#L51)
+
 ### 长文本
 
 Bert的输入最多为512字，如果待处理的文本超过512字，你可以**截断**或者**分段**
