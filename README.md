@@ -15,6 +15,7 @@
     - [知识蒸馏](#知识蒸馏)
     - [随机种子](#随机种子)
     - [ONNX硬件加速](#ONNX硬件加速)
+    - [warmup](#warmup)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -235,3 +236,19 @@ print(predictor.predict(texts))
 1. cpu下请使用onnxruntime库，而不是onnxruntime-gpu库，参见`setup.py`里`setup`函数的`install_requires`参数；
 2. onnxruntime-gpu==1.4.0仅适合cuda10.1 cuDNN7.6.5，更多版本兼容参考：
    https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements
+
+### warmup
+warmup使用**动态的学习率**（一般lr先增大 后减小），
+- lr一开始别太大，有助于缓解模型在初始阶段，对前几个batch数据过拟合；
+- lr后面小一点，有助于模型后期的稳定；
+
+可以通过`Trainer`的参数来控制warmup：
+- `warmup_type`：声明warmup的种类，默认为`None`，表示不启用warmup，即学习率恒定；
+  - 可以设置为`constant`，表示使用恒定学习率，lr曲线为![](docs/images/constant_warmup.png)
+  - 可以设置为`cosine`，表示余弦曲线学习率，lr曲线为![](docs/images/cosine_warmup.png)
+  - 可以设置为`linear`，表示线性学习率，lr曲线为![](docs/images/linear_warmup.png)
+- `warmup_step_num`：增加阶段，多少步到达设置的lr；
+  - 可以为`int`类型，表示步数；
+  - 也可以为`float`类型，表示总步数的比例。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
+
+更多代码样例参考`tests/test_warmup.py`。
