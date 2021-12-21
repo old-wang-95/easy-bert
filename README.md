@@ -25,7 +25,7 @@ easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参�
 1. **PYPI安装**：
    `pip install easy-zh-bert`
 
-   注意：因为和别的库重名，上传到pypi上的名字为**easy-zh-bert**
+   注意：因为和别的库重名，上传到pypi上的名字为[easy-zh-bert](https://pypi.org/project/easy-zh-bert/)
 2. **Github源码安装**：
     - `pip install git+https://github.com/waking95/easy-bert.git`
     - 可以指定具体的版本，如`0.3.0`，即：
