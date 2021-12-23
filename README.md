@@ -257,7 +257,7 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
 更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
 
 ### 混合精度(fp16)
-torch里面默认的浮点数是单精度的，即float32。我们可以**将部分模型参数用float16，即fp16半精度来表示**，一来可以降低显存的占用，而来可以提升训练和推理的速度。
+torch里面默认的浮点数是单精度的，即float32。我们可以**将部分模型参数用float16，即fp16半精度来表示**，一来可以降低显存的占用，二来可以提升训练和推理的速度。
 
 `Trainer`和`Predictor`都提供了`enable_fp16`参数来控制是否启用fp16，默认为`False`。
 
