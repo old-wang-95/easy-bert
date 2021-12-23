@@ -13,10 +13,11 @@ from easy_bert.vocab import Vocab
 
 class ClassificationPredictor(BasePredictor):
     def __init__(self, pretrained_model_dir, model_dir, vocab_name='vocab.json',
-                 enable_parallel=False):
+                 enable_parallel=False, enable_fp16=False):
         self.pretrained_model_dir = pretrained_model_dir
         self.model_dir = model_dir
         self.enable_parallel = enable_parallel
+        self.enable_fp16 = enable_fp16
 
         # 自动获取当前设备
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,6 +55,11 @@ class ClassificationPredictor(BasePredictor):
 
         # 设置为evaluate模式
         self.model.eval()
+
+        # 如果启用fp16，使用半精度
+        if self.enable_fp16:
+            self.model.half()
+            torch.cuda.empty_cache()  # 立即清空cache，降低显存占用
 
         # 如果启用并行，使用DataParallel封装model
         if self.enable_parallel:
