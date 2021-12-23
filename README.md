@@ -16,6 +16,7 @@
     - [随机种子](#随机种子)
     - [ONNX硬件加速](#ONNX硬件加速)
     - [warmup](#warmup)
+    - [混合精度(fp16)](#混合精度fp16)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -254,3 +255,10 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
   - 也可以为`float`类型，表示总步数的比例，`总步数 = batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
 
 更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
+
+### 混合精度(fp16)
+torch里面默认的浮点数是单精度的，即float32。我们可以**将部分模型参数用float16，即fp16半精度来表示**，一来可以降低显存的占用，二来可以提升训练和推理的速度。
+
+`Trainer`和`Predictor`都提供了`enable_fp16`参数来控制是否启用fp16，默认为`False`。
+
+更多代码样例参考 [tests/test_fp16.py](tests/test_fp16.py)。

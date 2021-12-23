@@ -59,6 +59,8 @@ class Vocab(object):
                         tag_cnt += 1
                 else:  # label为str类型
                     assert isinstance(label, str)
+                    if label in self.tag2id:
+                        continue
                     self.tag2id[label] = tag_cnt
                     self.id2tag[tag_cnt] = label
                     tag_cnt += 1

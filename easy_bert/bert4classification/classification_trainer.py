@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.cuda
 from sklearn.utils import shuffle
+from torch.cuda.amp import autocast, GradScaler
 from torch.nn import DataParallel
 from transformers import AdamW
 from transformers import get_constant_schedule_with_warmup, get_cosine_schedule_with_warmup, \
@@ -23,7 +24,7 @@ class ClassificationTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None, random_seed=0,
-                 warmup_type=None, warmup_step_num=10):
+                 warmup_type=None, warmup_step_num=10, enable_fp16=False):
         self.pretrained_model_dir = pretrained_model_dir
         self.model_dir = model_dir
         self.ckpt_name = ckpt_name
@@ -48,6 +49,11 @@ class ClassificationTrainer(BaseTrainer):
         self.learning_rate = learning_rate
         self.batch_size = None
         self.epoch = None
+
+        # 混合精度配置
+        if enable_fp16:
+            self.grad_scaler = GradScaler()  # 设置梯度缩放
+        self.enable_fp16 = enable_fp16
 
         # warmup配置
         assert warmup_type in ('constant', 'cosine', 'linear', None)
@@ -205,9 +211,18 @@ class ClassificationTrainer(BaseTrainer):
                 batch_input_ids, batch_att_mask, batch_label_ids = self._transform_batch(text_batch,
                                                                                          labels_batch,
                                                                                          max_length=batch_max_len)
-                best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
-                if self.enable_parallel:  # 如果启用并行，需将多张卡返回的sub-batch loss平均
+                if self.enable_fp16:  # 如果启用混合精度训练，用autocast封装，并放大loss
+                    with autocast():
+                        best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+                    loss = self.grad_scaler.scale(loss)
+                else:  # 不启用混合精度，正常训练
+                    best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+
+                # 如果启用并行，需将多张卡返回的sub-batch loss平均
+                if self.enable_parallel:
                     loss = loss.mean()
+
+                # 反向传播计算梯度
                 loss.backward()
 
                 # 对抗训练
@@ -215,7 +230,11 @@ class ClassificationTrainer(BaseTrainer):
                     adv.train(batch_input_ids, batch_att_mask, labels=batch_label_ids)
 
                 # 更新参数
-                self.optimizer.step()
+                if self.enable_fp16:
+                    self.grad_scaler.step(self.optimizer)
+                    self.grad_scaler.update()
+                else:
+                    self.optimizer.step()
 
                 # 如果启用warmup，更新lr
                 if self.warmup_type:
@@ -277,9 +296,18 @@ class ClassificationTrainer(BaseTrainer):
             batch_input_ids, batch_att_mask, batch_label_ids = self._transform_batch(batch_texts,
                                                                                      batch_labels,
                                                                                      max_length=batch_max_len)
-            best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+            # 如果启用混合精度训练，用autocast封装，并使用grad_scaler放大loss
+            if self.enable_fp16:
+                with autocast():
+                    best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+                loss = self.grad_scaler.scale(loss)
+            else:
+                best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+
+            # 如果启用并行，需将多张卡返回的sub-batch loss平均
             if self.enable_parallel:
                 loss = loss.mean()
+
             acc = self._get_acc_one_step(best_paths, batch_label_ids)
             return acc, loss
 
