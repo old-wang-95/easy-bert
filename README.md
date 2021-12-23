@@ -16,6 +16,7 @@
     - [随机种子](#随机种子)
     - [ONNX硬件加速](#ONNX硬件加速)
     - [warmup](#warmup)
+    - [混合精度(fp16)](#混合精度fp16)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
 
@@ -246,7 +247,7 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
 
 可以通过`Trainer`的参数来控制warmup：
 - `warmup_type`：声明warmup的种类，默认为`None`，表示不启用warmup，即学习率恒定；
-  - 可以设置为`constant`，表示使用常数学习率，lr曲线为 <img src="./docs/images/constant_warmup.png" width=500>
+  - 可以设置为`constant`，表示使用恒定学习率，lr曲线为 <img src="./docs/images/constant_warmup.png" width=500>
   - 可以设置为`cosine`，表示余弦曲线学习率，lr曲线为 <img src="./docs/images/cosine_warmup.png" width=500>
   - 可以设置为`linear`，表示线性学习率，lr曲线为 <img src="./docs/images/linear_warmup.png" width=500>
 - `warmup_step_num`：增加阶段，需要多少步到达设置的lr（上图中峰值）；
@@ -254,3 +255,10 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
   - 也可以为`float`类型，表示总步数的比例，`总步数 = batch_num * epoch`。如：总共训练1000步，设置`warmup_step_num=0.1`，表示warmup_step_num实际为100；
 
 更多代码样例参考 [tests/test_warmup.py](tests/test_warmup.py)。
+
+### 混合精度(fp16)
+torch里面默认的浮点数是单精度的，即float32。我们可以**将部分模型参数用float16，即fp16半精度来表示**，一来可以降低显存的占用，二来可以提升训练和推理的速度。
+
+`Trainer`和`Predictor`都提供了`enable_fp16`参数来控制是否启用fp16，默认为`False`。
+
+更多代码样例参考 [tests/test_fp16.py](tests/test_fp16.py)。
