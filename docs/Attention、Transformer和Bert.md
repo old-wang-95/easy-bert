@@ -14,25 +14,25 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 
 对于机器翻译，Attention分布可以通过如下方法获得：
 
-![](images/attention-seq2seq.png)
+<img height="200" src="images/attention-seq2seq.png"/>
 
 分别用编码器的隐层单元 `ℎ1`,`ℎ2`,`ℎ3` ，与解码器的上一个隐层 `H_i−1` ，进行相似度函数F运算，然后将输出使用Softmax函数得到归一化的概率`𝛼1,𝛼2,𝛼3`，即：
 
-![](images/attention-seq2seq-equation.png)
+<img height="200" src="images/attention-seq2seq-equation.png"/>
 
 我们比较 `H_i−1`（注意这里不是 `𝐻𝑖`，因为 `𝐻𝑖` 我们暂时还不知道）和 `ℎ𝑗` ，用其相似度作为对应 `𝑥𝑗` 的权重；
 
 ### 1.2 Attention
 普遍形式的Attention：
 
-![](images/attention-general.png)
+<img height="200" src="images/attention-general.png"/>
 
 - Source是输入序列，可以**将输入序列看成一系列的`<Key,Value>`对**；
 - 给定输出序列Target中的某个元素Query，计算Query和各个Key的相似度，得到每个Key对应Value的权重系数，然后对Value进行加权求和，最终得到Attention输出；
 
 公式为：
 
-![](images/attention-equation.png)
+<img height="200" src="images/attention-equation.png"/>
 
 - 其中，𝐿𝑥 为输入序列Source的长度
 - NLP中，计算Attention时，一般`Key`和`Value`合二为一，都是输入序列的编码，即 (`ℎ1,ℎ2,ℎ3,...`) 
@@ -44,7 +44,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 ### 1.3 三阶段Attention
 再抽象一下，可以得到三阶段Attention：
 
-![](images/attention-3-phrase.png)
+<img height="200" src="images/attention-3-phrase.png"/>
 
 - **阶段1** 根据Query和Key，计算相似度，得到权重系数；相似度的计算，可以是点积、Cosine相似性等；
 - **阶段2** 对权重系数使用Softmax函数归一化成概率；
@@ -54,11 +54,11 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 ### 2.1 Transformer整体架构
 Transformer也遵循了编码器-解码器的架构，如下图：
 
-![](images/transformer-base.png)
+<img height="200" src="images/transformer-base.png"/>
 
 - 上图**以机器翻译任务**为例（根据输入句子、已经预测得到的部分输出，预测下一个输出）
 - 左边是编码器部分，右边是解码器部分，它们都是由6（N=6）个大层堆积而成，即：
-  ![](images/transformer-layers.png)
+  <img height="200" src="images/transformer-layers.png"/>
 
 对于**编码器**：
 - 每个大层包含两个子层；
@@ -86,12 +86,12 @@ Transformer也遵循了编码器-解码器的架构，如下图：
 
 如下图，自注意力机制可以学到`it`和`the animal`的关联度最强：
 
-![](images/self-attention-example.png)
+<img height="200" src="images/self-attention-example.png"/>
 
 ### 2.3 自注意力的计算
 在自注意力中，**Query、Key、Value三者一体**，都是输入的编码
 
-![](images/self-attention-process.png)
+<img height="200" src="images/self-attention-process.png"/>
 
 - 这里的 **𝑋 是输入序列**，这里shape为  `𝑠𝑒𝑞_𝑙𝑒𝑛 ∗ 𝑒𝑚𝑏𝑒𝑑𝑑𝑖𝑛𝑔_𝑠𝑖𝑧𝑒` ，原始论文中`embedding_size`为512，这里为4；
 - **`W^Q`、`W^K`、`W^V`分别是`Query`、`Key`、`Value`对应的权重矩阵**，shape为 `𝑒𝑚𝑏𝑒𝑑𝑑𝑖𝑛𝑔_𝑠𝑖𝑧𝑒 ∗ d_k` ； `d_k` 即为K的宽度，原始论文中为64，这里是3；
@@ -100,14 +100,14 @@ Transformer也遵循了编码器-解码器的架构，如下图：
 
 这里使用**缩放点积注意力**（scaled dot-product attention），如下：
 
-![](images/self-attention-equation.png)
+<img height="200" src="images/self-attention-equation.png"/>
 
 这里**使用 𝑄 和 𝐾 的点积来计算相似度**，并**使用 ![](https://latex.codecogs.com/svg.latex?%5Csqrt%7Bd_k%7D) 缩放**，并**使用softmax函数归一为概率**；
 
 ### 2.4 多头自注意力
 transformer里使用的都是**多头自注意力**。这里的多头，即多个自注意力结合起来的意思
 
-![](images/multi-head-self-attention.png)
+<img height="200" src="images/multi-head-self-attention.png"/>
 
 - 将 `𝑄` `𝐾` `𝑉` 分别进行**线性投影后，划分为 ℎ 个头**; （论文里 ℎ=8 ，即8头）
 - 对每一个头，将划分后的 **`𝑄` `𝐾` `𝑉` 输入缩放点积Attention结构**；
@@ -116,7 +116,7 @@ transformer里使用的都是**多头自注意力**。这里的多头，即多�
 
 **具体过程**：
 
-![](images/multi-head-self-attention-process.png)
+<img height="200" src="images/multi-head-self-attention-process.png"/>
 
 ### 2.5 位置编码
 观察到，Transformer没有任何RNN或CNN的结构，没有天然处理序列数据的能力，至此，还不能捕获语序的特征。 也就是说，暂时，**Transformer只是一个强大的词袋模型**。
@@ -128,7 +128,7 @@ transformer里使用的都是**多头自注意力**。这里的多头，即多�
 
 论文中给出的一种**位置编码的计算方式**：
 
-![](images/position-encoding.png)
+<img height="200" src="images/position-encoding.png"/>
 
 - 其中`pos`是指当前词在句子中的位置，`i`是指向量中每个值的index；
     即**在偶数位置，使用正弦编码，在奇数位置，使用余弦编码**；
@@ -142,12 +142,12 @@ transformer里使用的都是**多头自注意力**。这里的多头，即多�
 前馈网络部分非常简单，就是**两层的全连接网络**，中间**使用ReLU激活函数**，
 公式如下：
 
-![](images/feed-forward.png)
+<img height="200" src="images/feed-forward.png"/>
 
 ### 2.7 Add & Norm部分
 每个子层之间都使用**经过layer norm的残差连接**，
 
-![](images/add-norm.png)
+<img height="200" src="images/add-norm.png"/>
 
 **残差连接即跳跃连接**，输入 𝑋 不仅正常连接到self-attention层，也跳跃连接到了前馈网络层。
 **残差连接便于网络的学习、增强了网络的泛化性**。
@@ -173,7 +173,7 @@ Bert**通过预训练，从大量无监督的语料中学习语义信息，预�
 ### 3.2 Bert结构
 网络结构非常简单，**多层Transformer的Encoder堆叠起来**
 
-![](images/bert-arch.png)
+<img height="200" src="images/bert-arch.png"/>
 
 - **输入层**将输入的文本序列表示为向量的形式，然后送入中间层；
 - **中间层**由多个Transformer的Encoder部分（不包含Decoder部分）堆积而成； 
@@ -184,7 +184,7 @@ Bert**通过预训练，从大量无监督的语料中学习语义信息，预�
 ### 3.3 输入表示
 实际上输入由3部分组成：
 
-![](images/bert-input.png)
+<img height="200" src="images/bert-input.png"/>
 
 注意：Bert**允许同时输入两个句子**（比如问答），图上就同时输入了`my dog is cute`和`he likes playing`两个句子，用`[SEP]`分隔开；
 
@@ -207,7 +207,7 @@ Bert使用**两种无监督的任务进行预训练**，分别是**Masked LM**�
 **MLM的任务描述**为：
 给定一句话，随机抹去这句话中的一个或几个词，要求根据剩余词汇预测被抹去的几个词分别是什么，**类似于完形填空**；
 
-![](images/MaskML.png)
+<img height="200" src="images/MaskML.png"/>
 
 - **传统语言模型**基于马尔科夫假设，只能从左向右、或者从右向左单向编码；**基于深度Transformer的Masked LM**能够同时学到前文、后文的双向特征，更为强大；
 - Bert会**对输入序列中的15%词汇进行随机Mask**，然后**在输出层去预测它们**；
@@ -221,7 +221,7 @@ Bert使用**两种无监督的任务进行预训练**，分别是**Masked LM**�
 Bert还使用**NSP任务**来预训练，其被描述为：
 给定一篇文章中的两句话，判断第二句话在文本中是否紧跟在第一句话之后，是个分类任务；
 
-![](images/NSP.png)
+<img height="200" src="images/NSP.png"/>
 
 - 如上图，我们同时输入两个句子`锄禾日当午`、`汗滴禾下土`，我们的标签应该是`正确`，表示句子2是句子1的下一句；
 
@@ -242,7 +242,7 @@ Bert的预训练需要在大量的无监督语料上，消耗巨大的计算资�
 
 下图展示了**BERT在11个不同任务中的模型**，它们只需要在BERT的基础上再添加一个输出层便可以完成对特定任务的微调。**Bert还是很强大的，能做的NLP任务很多**；
 
-![](images/bert-finetune.png)
+<img height="200" src="images/bert-finetune.png"/>
 
 - **输入可以是1个句子，也可以是2个句子**，每个句子用多个Token来表示，两个句子用`[SEP]`隔开；第一个输入为`[CLS]`；
 - **每个输入会有其对应的E**，即Embedding；
