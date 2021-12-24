@@ -99,7 +99,7 @@ labels = predictor.predict(texts)
 
 可以优先使用`chinese-roberta-wwm-ext`
 
-**相关理论**请学习：
+相关理论请学习：
 - [docs/Attention、Transformer和Bert](docs/Attention、Transformer和Bert.md)
 
 ### 学习率
