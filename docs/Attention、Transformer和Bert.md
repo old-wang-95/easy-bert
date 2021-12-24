@@ -4,9 +4,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 
 将`Tom chase Jerry`翻译为`汤姆 追逐 杰瑞`，在生成输出单词`杰瑞`时，显然输入单词`Jerry`起的作用，要比`Tom`和`chase`更重要。注意力机制可以给出一个如下的**概率分布**：
 
-```
-（Tom,0.3）(Chase,0.2) (Jerry,0.5)
-```
+`（Tom,0.3）(Chase,0.2) (Jerry,0.5)`
 
 概率代表了翻译当前单词`杰瑞`时，注意力分配模型给不同英文单词的注意力大小。同理，输出序列y的每个时刻yi，都应该有这么一个关于输入序列x的概率分布。
 
@@ -14,7 +12,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 
 对于机器翻译，Attention分布可以通过如下方法获得：
 
-<img height="500" src="images/attention-seq2seq.png"/>
+<img height="500" align="center" src="images/attention-seq2seq.png"/>
 
 分别用编码器的隐层单元 `ℎ1`,`ℎ2`,`ℎ3` ，与解码器的上一个隐层 `H_i−1` ，进行相似度函数F运算，然后将输出使用Softmax函数得到归一化的概率`𝛼1,𝛼2,𝛼3`，即：
 
