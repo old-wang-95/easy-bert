@@ -23,7 +23,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 ### 1.2 Attention
 普遍形式的Attention：
 
-<img height="400" src="images/attention-general.png"/>
+<img height="300" src="images/attention-general.png"/>
 
 - Source是输入序列，可以**将输入序列看成一系列的`<Key,Value>`对**；
 - 给定输出序列Target中的某个元素Query，计算Query和各个Key的相似度，得到每个Key对应Value的权重系数，然后对Value进行加权求和，最终得到Attention输出；
