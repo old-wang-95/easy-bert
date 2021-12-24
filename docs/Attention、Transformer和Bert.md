@@ -12,7 +12,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 
 对于机器翻译，Attention分布可以通过如下方法获得：
 
-<img height="500" align="center" src="images/attention-seq2seq.png"/>
+<img height="500" align="middle" src="images/attention-seq2seq.png"/>
 
 分别用编码器的隐层单元 `ℎ1`,`ℎ2`,`ℎ3` ，与解码器的上一个隐层 `H_i−1` ，进行相似度函数F运算，然后将输出使用Softmax函数得到归一化的概率`𝛼1,𝛼2,𝛼3`，即：
 
