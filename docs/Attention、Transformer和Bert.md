@@ -51,7 +51,7 @@ Attention最初出现在以**机器翻译**为代表的seq2seq网络中，用来
 
 公式为：
 
-<img height="50" src="images/attention-equation.png"/>
+<img height="100" src="images/attention-equation.png"/>
 
 - 其中，𝐿𝑥 为输入序列Source的长度
 - NLP中，计算Attention时，一般`Key`和`Value`合二为一，都是输入序列的编码，即 (`ℎ1,ℎ2,ℎ3,...`) 
