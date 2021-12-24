@@ -99,6 +99,8 @@ labels = predictor.predict(texts)
 
 可以优先使用`chinese-roberta-wwm-ext`
 
+Bert基本原理请参考：[docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
+
 ### 学习率
 
 bert微调一般使用较小的学习率`learning_rate`，如：`5e-5`, `3e-5`, `2e-5`
