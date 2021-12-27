@@ -72,11 +72,11 @@ SpanBert进行MLM时，**随机mask一小段文本**。
 以**一定的概率，采样一个span长度**，然后**随机采样起始位置，进行mask**，然后输出去预测它：
 1. **Span长度的概率分布**如下：
 
-<img height="200" src="images/spanbert-span-len.png"/>
+<img height="400" src="images/spanbert-span-len.png"/>
 
 2. span长度和span起始位置随机确定后，进行**MASK，示例如下**：
 
-  - <img height="200" src="images/spanbert-mask.png"/>
+  - <img height="300" src="images/spanbert-mask.png"/>
 
   - 以`x5`位置起始，MASK的span长度为`4`，MASK后，在输出层预测当前span，即：`an American football game`
 
@@ -92,7 +92,7 @@ MacBert依然是**改进MLM的Mask方式**，
 
 如下图，
 
-<img height="200" src="images/macbert.png"/>
+<img height="300" src="images/macbert.png"/>
 
 决定要MASK`模`时，使用了4-gram的MASK，并不是使用`[MASK]`token，而是用同义词`语法建模`来替换`语言模型`。
 
@@ -103,7 +103,7 @@ electra借鉴了对抗网络（GAN）的部分思想，**不使用MLM，而是RT
 
 模型由两部分组成，分别是**Generator**以及**Discriminator**，两个都是transformer的encoder结构，只是size不同。如下图：
 
-<img height="200" src="images/electra.png"/>
+<img height="300" src="images/electra.png"/>
 
 **生成器**：
 - 即一个**小的MLM**，size为判别器的1/4；
