@@ -11,7 +11,7 @@ Dropout被**定义**为，对于一个线性层`y=f(Wx+b)`，引入一个**丢�
 
 其中，**丢弃函数**被定义为：
 
-<img height="60" src="images/dropout-drop-func.png"/>
+<img height="80" src="images/dropout-drop-func.png"/>
 
 - `m∈{0,1}`是丢弃掩码，**训练时**以概率为p的*0-1分布*随机生成
 - **预测时**为了结果稳定，不丢弃神经元，但会乘上p (dropout rate)，相当于平均一下结果
