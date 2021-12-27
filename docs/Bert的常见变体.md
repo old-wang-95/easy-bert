@@ -107,7 +107,7 @@ electra借鉴了对抗网络（GAN）的部分思想，**不使用MLM，而是RT
 
 **生成器**：
 - 即一个**小的MLM**，size为判别器的1/4；
-- 随机选取**15%的token，替代为`[MASK]`**token；
+- 随机选取**15%的token，替代为**`[MASK]`token；
 - 使用Generator去训练模型，使得**模型预测被Mask的部分**；（可能预测错）
 - 如图，`the` 和 `cooked` 被随机选为被`[MASK]`，经过Generator，变成了`the`和`ate`；
 
