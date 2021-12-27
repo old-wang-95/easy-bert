@@ -65,3 +65,24 @@
 在交叉熵基础上，
 - `α` 控制**重点优化那些频率较低的label**；
 - `(1−p_t)^γ`控制**重点优化那些难学的样本**；
+
+## 3. crf loss
+crf层一般**被用在序列标注任务的最后一层**，**学习标签之间的转移**，参数为一个`n*n`的转移矩阵，`n`为label_size。下面是一个转移矩阵的例子：
+
+<img height="200" src="images/crf-trans-matrix.png"/>
+
+从图中可以看出，`b->s` `m->s`的转移几乎不太可能出现，因为权重很低。
+
+**crf loss的目标**是：*让正确路径的score的比重*在*所有路径score之和*的占比(softmax)中越大越好。如下图：
+
+<img height="300" src="images/viterbi.png"/>
+
+我们目标是让 `老 -> 王 -> 上 -> 课` 这条**正确路径的score**占**所有路径的总score**的比例最大。
+
+写成公式：
+
+<img height="80" src="images/crf-loss-p.png"/>
+
+正确路径我们一般称为gold path。使用负log最大似然，即得到**最终crf loss**：
+
+<img height="80" src="images/crf-loss.png"/>
