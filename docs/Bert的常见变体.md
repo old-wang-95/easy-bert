@@ -55,7 +55,7 @@ NSP任务效果不好，作者认为是**负样本的构造跨了文章**， 因
 ## 3. Bert-wwm
 Bert-wwm，即**基于全词mask的bert预训练**，**减少了词汇信息对学习语言模型干扰**，增强了MLM的上下文预测能力。原理如下图：
 
-![](images/bert-wwm.png)
+<img height="200" src="images/bert-wwm.png"/>
 
 在决定要MASK`模`这个字时，最终MASK的是`模型`这个词。
 
@@ -64,19 +64,19 @@ Bert-wwm-ext，在wwm基础上，使用了更多的数据；
 ## 4. ERNIE
 ERNIE**将Mask的方式扩展到短语和实体级别**：
 
-![](images/ernie.png)
+<img height="200" src="images/ernie.png"/>
 
 ## 5. SpanBert
 SpanBert进行MLM时，**随机mask一小段文本**。
 
 以**一定的概率，采样一个span长度**，然后**随机采样起始位置，进行mask**，然后输出去预测它：
 1. **Span长度的概率分布**如下：
-  
-  ![](images/spanbert-span-len.png)
+
+<img height="200" src="images/spanbert-span-len.png"/>
 
 2. span长度和span起始位置随机确定后，进行**MASK，示例如下**：
 
-  - ![](images/spanbert-mask.png)
+  - <img height="200" src="images/spanbert-mask.png"/>
 
   - 以`x5`位置起始，MASK的span长度为`4`，MASK后，在输出层预测当前span，即：`an American football game`
 
@@ -92,7 +92,7 @@ MacBert依然是**改进MLM的Mask方式**，
 
 如下图，
 
-![](images/macbert.png)
+<img height="200" src="images/macbert.png"/>
 
 决定要MASK`模`时，使用了4-gram的MASK，并不是使用`[MASK]`token，而是用同义词`语法建模`来替换`语言模型`。
 
@@ -103,7 +103,7 @@ electra借鉴了对抗网络（GAN）的部分思想，**不使用MLM，而是RT
 
 模型由两部分组成，分别是**Generator**以及**Discriminator**，两个都是transformer的encoder结构，只是size不同。如下图：
 
-![](images/electra.png)
+<img height="200" src="images/electra.png"/>
 
 **生成器**：
 - 即一个**小的MLM**，size为判别器的1/4；
