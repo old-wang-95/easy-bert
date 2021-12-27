@@ -27,7 +27,7 @@
   - `y∈{±1}` 即**正确label**；
   - `p∈[0,1]` 即**模型预测label=1的概率**；
 
-定义p_t <img height="60" src="images/bce-pt.png" align="center"/> ，于是 <img height="60" src="images/bce-2.png" align="center"/>
+定义`p_t` <img height="60" src="images/bce-pt.png" align="center"/> ，于是 <img height="40" src="images/bce-2.png" align="center"/>
 
 <br>
 
@@ -35,7 +35,7 @@
 
 于是，可以**为每个类别设置一个独立的权重`α`**，即：
 
-<img height="80" src="images/ce-loss-weight.png"/>
+<img height="60" src="images/ce-loss-weight.png"/>
 
 其中：`α∈[0,1]`，通常被**设置为label频率的倒数**，或者被**视为一个超参数**
 
@@ -51,7 +51,7 @@
 
 这里，`γ`**是一个超参数，控制降权程度**（对简单样本降权），如下图：
 
-<img height="400" src="images/focal-loss-gama.png"/>
+<img height="500" src="images/focal-loss-gama.png"/>
 
 - `γ`**越大，对简单样本打压越厉害**；
 - 当`γ`为`0`时，退化为交叉熵损失；
