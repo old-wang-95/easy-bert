@@ -1,3 +1,7 @@
+目录
+1. [标签平滑loss](#1-标签平滑loss)
+2. [Focal loss](#2-focal-loss)
+3. [crf loss](#3-crf-loss)
 
 ## 1. 标签平滑loss
 标签平滑也是**一种正则化方法**，它**在label层面增加噪声**，使用soft label替代hard label。如下图：
@@ -77,7 +81,7 @@ crf层一般**被用在序列标注任务的最后一层**，**学习标签之�
 
 <img height="300" src="images/viterbi.png"/>
 
-我们目标是让 `老 -> 王 -> 上 -> 课` 这条**正确路径的score**占**所有路径的总score**的比例最大。
+我们目标是让 `B -> E -> B -> E` 这条**正确路径的score**占**所有路径的总score**的比例最大。
 
 写成公式：
 
