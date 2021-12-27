@@ -2,9 +2,9 @@
 ## 1. 标签平滑loss
 标签平滑也是**一种正则化方法**，它**在label层面增加噪声**，使用soft label替代hard label。如下图：
 
-<img height="400" src="images/label-smooth-img.png"/>
+<img height="300" src="images/label-smooth-img.png"/>
 
-交叉熵loss定义为：
+**交叉熵loss**定义为：
 
 <img height="80" src="images/ce-loss.png"/>
 
