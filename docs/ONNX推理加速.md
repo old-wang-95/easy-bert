@@ -10,7 +10,7 @@
 
 下面是**onnx模型标准**：
 
-<img height="400" src="images/onnx.png"/>
+<img height="350" src="images/onnx.png"/>
 
 ONNX提供了**一套标准的AI模型格式**，可以统一传统的机器学习、前沿的深度学习模型。
 
@@ -22,4 +22,4 @@ ONNX提供了**一套标准的AI模型格式**，可以统一传统的机器学�
 
 下面是**加速效果对比**：
 
-<img height="400" src="images/onnx-speed-example.png"/>
+<img height="300" src="images/onnx-speed-example.png"/>
