@@ -371,7 +371,7 @@ Bert的预训练需要在大量的无监督语料上，消耗巨大的计算资�
 
 <br>
 
-部分代码示例：
+**部分代码示例**：
 ```python
 # 定义tokenizer、bert_model、最后分类的linear层
 bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
@@ -386,9 +386,10 @@ last_hidden_state, pooled_output = bert_out[:2]  # pooled_output即为C，last_h
 
 # 分类任务，C接分类层
 logits = cls_layer(pooled_output)  # batch_size * hidden_size
+
 # 序列标注任务，𝑇1 ~ 𝑇𝑁接分类层
 logits = cls_layer(last_hidden_state)  # batch_size * seq_len * hidden_size
 ```
-完整代码请参考
+**完整代码**请参考以下源代码：
 - [easy_bert/bert4classification/classification_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4classification/classification_model.py)
 - [easy_bert/bert4sequence_labeling/sequence_labeling_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4sequence_labeling/sequence_labeling_model.py)
