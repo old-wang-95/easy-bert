@@ -6,7 +6,7 @@
 5. [SpanBert](#5-spanbert)
 6. [MacBert](#6-macbert)
 7. [ELECTRA](#7-electra)
-8. 
+8. [变体实践](#8-变体实践)
 
 ## 1. RoBERTa
 RoBERTa，即**Bert预训练方法的鲁棒优化**：
