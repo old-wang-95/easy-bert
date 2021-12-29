@@ -1,6 +1,7 @@
 目录
 1. [Dropout](#1-dropout)
 2. [Dropout有效性](#2-dropout有效性)
+3. [实践](#3-实践)
 
 ## 1. Dropout
 Dropout通过**随机丢弃一部分神经元来避免过拟合**，如下图：
