@@ -20,6 +20,8 @@
 
 - `α`为超参数，一般设置为`0.1`                      
 
+<br>
+
 **代码示例**：from [easy_bert/losses/label_smoothing_loss.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/losses/label_smoothing_loss.py)
 ```python
 import torch.nn as nn
@@ -116,6 +118,8 @@ class LabelSmoothingCrossEntropy(nn.Module):
 - `α` 控制**重点优化那些频率较低的label**；
 - `(1−p_t)^γ`控制**重点优化那些难学的样本**；
 
+<br>
+
 **代码示例**：from [easy_bert/losses/focal_loss.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/losses/focal_loss.py)
 ```python
 import torch
@@ -183,6 +187,8 @@ crf层一般**被用在序列标注任务的最后一层**，**学习标签之�
 正确路径我们一般称为gold path。使用负log最大似然，即得到**最终crf loss**：
 
 <img height="80" src="images/crf-loss.png"/>
+
+<br>
 
 **代码示例**：from [easy_bert/losses/crf_layer.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/losses/crf_layer.py)
 ```python
