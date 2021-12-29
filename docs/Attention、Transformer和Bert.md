@@ -368,3 +368,27 @@ Bert的预训练需要在大量的无监督语料上，消耗巨大的计算资�
 - **分类任务**，输入单个句子，然后将输出的 𝐶 接入全连接层，做多分类；
 - **查重任务**，同时输入两个句子，然后将输出的 𝐶 接入全连接层，做2分类，判断两个句子是否重复；
 - **序列标注任务**，输入单个句子，然后用输出的 𝑇1 ~ 𝑇𝑁 做序列标注（还可以再接入CRF层，学习标签之间的转移）；
+
+<br>
+
+部分代码示例：
+```python
+# 定义tokenizer、bert_model、最后分类的linear层
+bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
+bert_model = BertModel.from_pretrained(bert_base_model_dir)
+cls_layer = nn.Linear(bert_model.config.hidden_size, label_size)
+
+# 前向
+bert_out = bert_model(
+    input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, return_dict=False
+)
+last_hidden_state, pooled_output = bert_out[:2]  # pooled_output即为C，last_hidden_state即为𝑇1 ~ 𝑇𝑁
+
+# 分类任务，C接分类层
+logits = cls_layer(pooled_output)  # batch_size * hidden_size
+# 序列标注任务，𝑇1 ~ 𝑇𝑁接分类层
+logits = cls_layer(last_hidden_state)  # batch_size * seq_len * hidden_size
+```
+完整代码请参考
+- [easy_bert/bert4classification/classification_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4classification/classification_model.py)
+- [easy_bert/bert4sequence_labeling/sequence_labeling_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4sequence_labeling/sequence_labeling_model.py)
