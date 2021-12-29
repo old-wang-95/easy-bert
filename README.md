@@ -265,3 +265,16 @@ torch里面默认的浮点数是单精度的，即float32。我们可以**将部
 `Trainer`和`Predictor`都提供了`enable_fp16`参数来控制是否启用fp16，默认为`False`。
 
 更多代码样例参考 [tests/test_fp16.py](tests/test_fp16.py)。
+
+## 4. 理论教程 && 源码解读
+- [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
+- [docs/Bert的常见变体.md](docs/Bert的常见变体.md)
+- [docs/Dropout.md](docs/Dropout.md)
+- [docs/ONNX推理加速.md](docs/ONNX推理加速.md)
+- [docs/Warmup.md](docs/Warmup.md)
+- [docs/对抗训练.md](docs/对抗训练.md)
+- [docs/常用的loss.md](docs/常用的loss.md)
+- [docs/并行训练.md](docs/并行训练.md)
+- [docs/混合精度.md](docs/混合精度.md)
+- [docs/知识蒸馏.md](docs/知识蒸馏.md)
+- [docs/长文本.md](docs/长文本.md)
