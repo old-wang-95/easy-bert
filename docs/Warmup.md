@@ -17,7 +17,7 @@ warmup使用**动态的学习率**（一般lr先增大 后减小），
 ## 2. 实践
 transformers提供了上述几种warmup，可以直接使用。
 
-首先**设置warmup**，**代码示例**：
+首先**设置warmup**，代码示例：
 ```python
 # 根据warmup配置，设置warmup
 total_steps = len(train_texts) // batch_size * epoch
