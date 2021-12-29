@@ -373,9 +373,12 @@ Bert的预训练需要在大量的无监督语料上，消耗巨大的计算资�
 
 **部分代码示例**：
 ```python
+# 请事先下载bert的中文预训练模型bert-base-chinese从huggingface
+# https://huggingface.co/bert-base-chinese
+
 # 定义tokenizer、bert_model、最后分类的linear层
-bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
-bert_model = BertModel.from_pretrained(bert_base_model_dir)
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
+bert_model = BertModel.from_pretrained('bert-base-chinese')
 cls_layer = nn.Linear(bert_model.config.hidden_size, label_size)
 
 # 前向

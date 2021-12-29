@@ -6,6 +6,7 @@
 5. [SpanBert](#5-spanbert)
 6. [MacBert](#6-macbert)
 7. [ELECTRA](#7-electra)
+8. 
 
 ## 1. RoBERTa
 RoBERTa，即**Bert预训练方法的鲁棒优化**：
@@ -14,6 +15,8 @@ RoBERTa，即**Bert预训练方法的鲁棒优化**：
 - 使用**动态MASK**：
   - BERT预训练时，是静态MASK，即在预训练前统一进行随机MASK，这导致多个epoch使用的都是一样的MASK；
   - RoBERTa在**每次输入时进行MASK，确保每个epoch下的训练数据，使用不同MASK方式**；
+
+可用的**中文预训练模型**：[chinese-roberta-wwm-ext](https://huggingface.co/hfl/chinese-roberta-wwm-ext)
 
 ## 2. ALBERT
 ALBERT，即**轻量级bert**，主要解决Bert预训练太耗资源：
@@ -52,6 +55,8 @@ NSP任务效果不好，作者认为是**负样本的构造跨了文章**， 因
 尽管参数减少可以训练更快，但在**推理阶段，ALBERT并没有提升多少速度**；
 - 因为12个Transformer还是要逐层计算的；
 
+可用的**中文预训练模型**：[albert_chinese_base](https://huggingface.co/voidful/albert_chinese_base)
+
 ## 3. Bert-wwm
 Bert-wwm，即**基于全词mask的bert预训练**，**减少了词汇信息对学习语言模型干扰**，增强了MLM的上下文预测能力。原理如下图：
 
@@ -60,6 +65,8 @@ Bert-wwm，即**基于全词mask的bert预训练**，**减少了词汇信息对�
 在决定要MASK`模`这个字时，最终MASK的是`模型`这个词。
 
 Bert-wwm-ext，在wwm基础上，使用了更多的数据；
+
+可用的**中文预训练模型**：[chinese-bert-wwm](https://huggingface.co/hfl/chinese-bert-wwm)
 
 ## 4. ERNIE
 ERNIE**将Mask的方式扩展到短语和实体级别**：
@@ -98,6 +105,8 @@ MacBert依然是**改进MLM的Mask方式**，
 
 另外，和ALBERT一样，MacBert也使用SOP任务替代NSP任务。
 
+可用的**中文预训练模型**：[chinese-macbert-base](https://huggingface.co/hfl/chinese-macbert-base)
+
 ## 7. ELECTRA
 electra借鉴了对抗网络（GAN）的部分思想，**不使用MLM，而是RTD任务**（Replaced Token Detection）；
 
@@ -123,3 +132,22 @@ electra借鉴了对抗网络（GAN）的部分思想，**不使用MLM，而是RT
 另外**注意两点**：
 1. electra的**微调只需要使用判别器**；
 2. 实践中，electra的效果可能不如Roberta等，但是**其小模型（tiny）效果比较好**，在高性能、资源有限场景下可以尝试；
+
+可用的**中文预训练模型**：[chinese-electra-180g-base-discriminator](https://huggingface.co/hfl/chinese-electra-180g-base-discriminator)
+
+## 8. 变体实践
+bert上述变体的**使用方法，基本和标准bert区别不大**，只是换了预训练模型而已。
+
+但要注意：
+1. **有些变体改了bert结构**，比如ALBERT、ELECTRA，**加载模型时需要使用其对应的Model类**；
+    - 加载ALBERT预训练模型，使用`transformers.AlbertModel`；
+    - 加载ELECTRA预训练模型，使用`transformers.ElectraModel`；
+    - Bert-base、RoBERTa、Bert-wwm、MacBert均使用`transformers.BertModel`；
+2. **不同变体的bert pooler可能不一样**，在使用的时候需要注意；
+    - 原始bert pooler是一个使用`tanh`激活的全连接层，实现`hidden_size->hidden_size` 的映射；
+    - pooler作用在`last_hidden_state[:, 0, :]`上，即`[CLS]`位置，才产生`pooled_output`；
+    - ELECTRA使用的是`gelu`激活的bert pooler；
+
+**完整代码**请参考以下源代码：
+- [easy_bert/bert4classification/classification_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4classification/classification_model.py)
+- [easy_bert/bert4sequence_labeling/sequence_labeling_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4sequence_labeling/sequence_labeling_model.py)
