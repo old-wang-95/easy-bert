@@ -22,3 +22,20 @@ Dropout被**定义**为，对于一个线性层`y=f(Wx+b)`，引入一个**丢�
 从**集成学习的角度**：
 - 训练时，每次**随机采样一个完整网络的子网络**；
 - 预测时，相当于**集成了这些不同结构的子网络**；
+
+## 3. 实践
+这里的dropout，主要用在最后一层linear分类层之前。
+
+于是，你能看到下面代码：
+```python
+cls_outs = self.dropout(pooled_output)
+logits = self.cls_layer(cls_outs)
+```
+```python
+seq_outs = self.dropout(last_hidden_state)
+logits = self.linear(seq_outs)
+```
+
+**完整代码**请参考以下源代码：
+- [easy_bert/bert4classification/classification_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4classification/classification_model.py)
+- [easy_bert/bert4sequence_labeling/sequence_labeling_model.py](https://github.com/waking95/easy-bert/blob/main/easy_bert/bert4sequence_labeling/sequence_labeling_model.py)
