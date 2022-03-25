@@ -288,7 +288,8 @@ bert已经提供了通用领域的预训练。为了提升下游任务的效果�
 详情请参考 [tests/test_mlm.py](tests/test_mlm.py)
 
 注意：
-- mlm的实现为wwm，即**全词mask**。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
+- mlm的实现为wwm，即**全词动态mask**。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
+- 因为是**动态mask**，即多个epoch里的同一个batch的mask的地方不一样，所以需要更多的epoch去迭代；
 
 ## 4. 理论教程 && 源码解读
 - [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
