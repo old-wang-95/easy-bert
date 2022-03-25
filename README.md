@@ -4,6 +4,7 @@
 2. [极速上手](#2-极速上手)
     - [分类任务](#分类任务)
     - [序列标注](#序列标注)
+    - [预训练](#预训练)
 3. [调参指南](#3-调参指南)
     - [预训练模型](#预训练模型)
     - [学习率](#学习率)
@@ -17,6 +18,7 @@
     - [ONNX硬件加速](#ONNX硬件加速)
     - [warmup](#warmup)
     - [混合精度(fp16)](#混合精度fp16)
+    - [领域预训练](#领域预训练)
 4. [理论教程 && 源码解读](#4-理论教程--源码解读)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
@@ -79,6 +81,18 @@ labels = predictor.predict(texts)
 ```
 
 更多代码样例参考：[tests/test_bert4sequence_labeling.py](tests/test_bert4sequence_labeling.py)
+
+#### 预训练
+```python
+from easy_bert.bert4pretraining.mlm_trainer import MaskedLMTrainer
+
+pretrained_model_dir, your_model_dir = './models/chinese-roberta-wwm-ext', './tests/test_model'
+texts = [
+    '早上起床后，我发现今天天气还真是不错的。早上起床后，我发现今天天气还真是不错的。早上起床后，我发现今天天气还真是不错的。'
+]
+trainer = MaskedLMTrainer(pretrained_model_dir, your_model_dir)
+trainer.train(texts, batch_size=1, epoch=20)
+```
 
 ## 3. 调参指南
 
@@ -263,6 +277,16 @@ torch里面默认的浮点数是单精度的，即float32。我们可以**将部
 `Trainer`和`Predictor`都提供了`enable_fp16`参数来控制是否启用fp16，默认为`False`。
 
 更多代码样例参考 [tests/test_fp16.py](tests/test_fp16.py)。
+
+### 领域预训练
+bert已经提供了通用领域的预训练。为了提升下游任务的效果，你可能需要在特定领域（如金融、医疗等）上进行预训练，当前主要支持了MLM的预训练（NSP任务的预训练已被证明没什么作用）
+
+[MaskedLMTrainer](easy_bert/bert4pretraining/mlm_trainer.py)提供了非常好用的接口，可以直接来进行训练
+
+详情请参考 [tests/test_mlm.py](tests/test_mlm.py)
+
+注意：
+- mlm的实现为wwm，即全词mask。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
 
 ## 4. 理论教程 && 源码解读
 - [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
