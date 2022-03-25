@@ -99,6 +99,28 @@ class MyTestCase(unittest.TestCase):
         labels = predictor.predict(texts)
         print(labels)
 
+    def test_output_probs(self):
+        print('test_output_probs~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        pretrained_model_dir = './models/chinese-roberta-wwm-ext'
+        texts = [
+            '天气真好',
+            '今天运气很差',
+        ]
+        labels = ['正面', '负面']
+
+        trainer = ClassificationTrainer(pretrained_model_dir, self.model_dir)
+        trainer.train(texts, labels, validate_texts=texts, validate_labels=labels, batch_size=2, epoch=20)
+        predictor = ClassificationPredictor(pretrained_model_dir, self.model_dir)
+        texts = [
+            '天气真好',
+            '今天运气很差',
+            '天气不错',
+            '今天运气很烂哦',
+        ]
+        labels, label_probs = predictor.predict(texts, return_probs=True)
+        print(labels)
+        print(label_probs)
+
 
 if __name__ == '__main__':
     unittest.main()

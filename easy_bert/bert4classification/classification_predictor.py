@@ -72,16 +72,17 @@ class ClassificationPredictor(BasePredictor):
         self.vocab.set_unk_vocab_id(self.vocab.vocab2id['[UNK]'])
         self.vocab.set_pad_vocab_id(self.vocab.vocab2id['[PAD]'])
 
-    def predict(self, texts, batch_size=64, max_len=512):
+    def predict(self, texts, batch_size=64, max_len=512, return_probs=False):
         """
         Args:
             texts: list[str] 预测样本
             batch_size: int
             max_len: int 最大序列长度
+            return_probs: bool 是否返回概率，默认False，当前仅支持torch模型返回
         Returns:
             list[str] 标签序列
         """
-        batch_labels = []
+        batch_labels, batch_probs = [], []
 
         for batch_idx in range(math.ceil(len(texts) / batch_size)):
             text_batch = texts[batch_size * batch_idx: batch_size * (batch_idx + 1)]
@@ -113,10 +114,16 @@ class ClassificationPredictor(BasePredictor):
                         {'input1': batch_input_ids.cpu().numpy(), 'input2': batch_att_mask.cpu().numpy()}
                     )[0]
                 else:  # torch模型推理
-                    best_labels = self.model(batch_input_ids, batch_att_mask)
+                    best_labels, extra = self.model(batch_input_ids, batch_att_mask, return_extra=True)
+                    if return_probs:  # 返回概率
+                        for label_dist in torch.softmax(extra['logits'], -1):
+                            batch_probs.append(
+                                {self.vocab.id2tag[idx]: prob for idx, prob in enumerate(label_dist.tolist())}
+                            )
+                    [label_dist.tolist() for label_dist in torch.softmax(extra['logits'], -1)]
                 batch_labels.extend([self.vocab.id2tag[label_id.item()] for label_id in best_labels])
 
-        return batch_labels
+        return batch_labels if not return_probs else (batch_labels, batch_probs)
 
     def get_bert_tokenizer(self):
         """根据是否并行，获取bert_tokenizer"""
