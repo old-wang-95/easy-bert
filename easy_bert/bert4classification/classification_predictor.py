@@ -120,7 +120,6 @@ class ClassificationPredictor(BasePredictor):
                             batch_probs.append(
                                 {self.vocab.id2tag[idx]: prob for idx, prob in enumerate(label_dist.tolist())}
                             )
-                    [label_dist.tolist() for label_dist in torch.softmax(extra['logits'], -1)]
                 batch_labels.extend([self.vocab.id2tag[label_id.item()] for label_id in best_labels])
 
         return batch_labels if not return_probs else (batch_labels, batch_probs)
