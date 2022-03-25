@@ -94,6 +94,8 @@ trainer = MaskedLMTrainer(pretrained_model_dir, your_model_dir)
 trainer.train(texts, batch_size=1, epoch=20)
 ```
 
+更多代码样例参考：[tests/test_mlm.py](tests/test_mlm.py)
+
 ## 3. 调参指南
 
 `Trainer`提供了丰富的参数可供选择
@@ -279,14 +281,14 @@ torch里面默认的浮点数是单精度的，即float32。我们可以**将部
 更多代码样例参考 [tests/test_fp16.py](tests/test_fp16.py)。
 
 ### 领域预训练
-bert已经提供了通用领域的预训练。为了提升下游任务的效果，你可能需要在特定领域（如金融、医疗等）上进行预训练，当前主要支持了MLM的预训练（NSP任务的预训练已被证明没什么作用）
+bert已经提供了通用领域的预训练。为了提升下游任务的效果，你可能需要**在特定领域（如金融、医疗等）上进行预训练**，当前主要支持了MLM的预训练（NSP任务的预训练已被证明没什么作用）
 
-[MaskedLMTrainer](easy_bert/bert4pretraining/mlm_trainer.py)提供了非常好用的接口，可以直接来进行训练
+[MaskedLMTrainer](easy_bert/bert4pretraining/mlm_trainer.py) 提供了非常好用的接口，可以直接来进行训练
 
 详情请参考 [tests/test_mlm.py](tests/test_mlm.py)
 
 注意：
-- mlm的实现为wwm，即全词mask。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
+- mlm的实现为wwm，即**全词mask**。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
 
 ## 4. 理论教程 && 源码解读
 - [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
