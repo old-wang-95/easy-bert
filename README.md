@@ -300,6 +300,8 @@ bert已经提供了通用领域的预训练。为了提升下游任务的效果�
 - `rnn_hidden`：**后接层rnn的hidden_size**，默认为`256`；
 - `rnn_lr`：**后接层rnn的learning_rate**，默认为`1e-3`，后接层的参数没有参与过预训练，学习率一般设置得较大；
 
+更多代码样例参考 [tests/test_add_on.py](tests/test_add_on.py)。
+
 ## 4. 理论教程 && 源码解读
 - [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
 - [docs/Bert的常见变体.md](docs/Bert的常见变体.md)
