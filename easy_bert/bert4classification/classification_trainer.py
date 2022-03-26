@@ -25,12 +25,15 @@ class ClassificationTrainer(BaseTrainer):
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None, random_seed=0,
                  warmup_type=None, warmup_step_num=10, enable_fp16=False,
-                 add_on=None, rnn_hidden=256, rnn_lr=1e-3):
-        self.pretrained_model_dir = pretrained_model_dir
-        self.model_dir = model_dir
-        self.ckpt_name = ckpt_name
-        self.vocab_name = vocab_name
+                 add_on=None, rnn_hidden=256, rnn_lr=1e-3,
+                 load_last_ckpt=False):
+        # 设置目录
+        self.pretrained_model_dir, self.model_dir = pretrained_model_dir, model_dir
+        self.ckpt_name, self.vocab_name = ckpt_name, vocab_name
+
         self.enable_parallel = enable_parallel
+
+        self.load_last_ckpt = load_last_ckpt  # 是否加载上次模型
 
         # 设置随机种子
         self.random_seed = random_seed
@@ -85,6 +88,13 @@ class ClassificationTrainer(BaseTrainer):
             loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma,
             add_on=self.add_on, rnn_hidden=self.rnn_hidden
         )
+
+        # 如果启用增量训练，预加载之前训练好的模型
+        if self.load_last_ckpt and os.path.exists('{}/{}'.format(self.model_dir, self.ckpt_name)):
+            self.model.load_state_dict(
+                torch.load('{}/{}'.format(self.model_dir, self.ckpt_name), map_location=self.device)
+            )
+            logger.info('load last ckpt {}/{} success'.format(self.model_dir, self.ckpt_name))
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化

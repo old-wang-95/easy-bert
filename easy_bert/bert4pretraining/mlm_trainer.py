@@ -17,9 +17,10 @@ from easy_bert import logger
 class MaskedLMTrainer(object):
 
     def __init__(self, pretrained_model_dir, model_dir, word_dict=frozenset(), learning_rate=5e-5,
-                 ckpt_name='bert_model.bin', enable_parallel=False, random_seed=0, enable_fp16=False):
-        self.pretrained_model_dir = pretrained_model_dir
-        self.model_dir = model_dir
+                 ckpt_name='bert_model.bin', enable_parallel=False, random_seed=0, enable_fp16=False,
+                 load_last_ckpt=False):
+        # 设置目录
+        self.pretrained_model_dir, self.model_dir = pretrained_model_dir, model_dir
         self.ckpt_name = ckpt_name
 
         self.learning_rate = learning_rate
@@ -28,6 +29,10 @@ class MaskedLMTrainer(object):
 
         self.enable_parallel = enable_parallel
 
+        self.load_last_ckpt = load_last_ckpt  # 是否加载上次模型
+
+        # 词库word_dict配置，使用其进行wwm
+        assert isinstance(word_dict, set) or isinstance(word_dict, frozenset)
         self.word_dict = word_dict
         if not word_dict:
             logger.warning('word_dict is empty, you can set it when enable whole word mask!')
@@ -56,6 +61,13 @@ class MaskedLMTrainer(object):
         # 实例化BertForMaskedLM模型
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.pretrained_model_dir)
         self.model = BertForMaskedLM.from_pretrained(self.pretrained_model_dir)
+
+        # 如果启用增量训练，预加载之前训练好的模型
+        if self.load_last_ckpt and os.path.exists('{}/{}'.format(self.model_dir, self.ckpt_name)):
+            self.model.load_state_dict(
+                torch.load('{}/{}'.format(self.model_dir, self.ckpt_name), map_location=self.device)
+            )
+            logger.info('load last ckpt {}/{} success'.format(self.model_dir, self.ckpt_name))
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化
@@ -173,13 +185,14 @@ class MaskedLMTrainer(object):
 
         return batch_input_ids, batch_att_mask, batch_label_ids
 
-    def train(self, train_texts, batch_size=30, epoch=10, warning_max_len=True):
+    def train(self, train_texts, batch_size=30, epoch=10, warning_max_len=True, saved_step=1000):
         """训练
         Args:
             train_texts: list[str] 训练集样本
             batch_size: int
             epoch: int
             warning_max_len: bool 是否警告max_len超过512（普通bert不能处理超过512，除了一些变体如longformer）
+            saved_step: 多少个step模型保存一次
         """
         self.batch_size = batch_size
         self.epoch = epoch
@@ -235,8 +248,8 @@ class MaskedLMTrainer(object):
 
                 logger.info('epoch %d, step %d, train loss %.4f, train acc %.4f' % (epoch, step, loss, train_acc))
 
-                # 1000个step存一次模型
-                if step % 1000 == 0:
+                # saved_step个step存一次模型
+                if step % saved_step == 0:
                     # 根据是否启用并行，获得state_dict
                     state_dict = self.model.state_dict() if not self.enable_parallel else self.model.module.state_dict()
                     torch.save(state_dict, '{}/{}'.format(self.model_dir, self.ckpt_name))

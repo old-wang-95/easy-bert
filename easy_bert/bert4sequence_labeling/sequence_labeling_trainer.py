@@ -23,12 +23,15 @@ class SequenceLabelingTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='crf_loss', crf_learning_rate=None, focal_loss_gamma=2, focal_loss_alpha=None,
-                 random_seed=0, warmup_type=None, warmup_step_num=10, enable_fp16=False):
-        self.pretrained_model_dir = pretrained_model_dir
-        self.model_dir = model_dir
-        self.ckpt_name = ckpt_name
-        self.vocab_name = vocab_name
+                 random_seed=0, warmup_type=None, warmup_step_num=10, enable_fp16=False,
+                 load_last_ckpt=False):
+        # 设置目录
+        self.pretrained_model_dir, self.model_dir = pretrained_model_dir, model_dir
+        self.ckpt_name, self.vocab_name = ckpt_name, vocab_name
+
         self.enable_parallel = enable_parallel
+
+        self.load_last_ckpt = load_last_ckpt  # 是否加载上次模型
 
         # 设置随机种子
         self.random_seed = random_seed
@@ -77,6 +80,13 @@ class SequenceLabelingTrainer(BaseTrainer):
             self.pretrained_model_dir, self.vocab.label_size, drop_out_rate=self.dropout_rate,
             loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma
         )
+
+        # 如果启用增量训练，预加载之前训练好的模型
+        if self.load_last_ckpt and os.path.exists('{}/{}'.format(self.model_dir, self.ckpt_name)):
+            self.model.load_state_dict(
+                torch.load('{}/{}'.format(self.model_dir, self.ckpt_name), map_location=self.device)
+            )
+            logger.info('load last ckpt {}/{} success'.format(self.model_dir, self.ckpt_name))
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化
