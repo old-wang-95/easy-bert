@@ -126,6 +126,7 @@ class SequenceLabelingTrainer(BaseTrainer):
             'ckpt_name': self.ckpt_name,
             'vocab_name': self.vocab_name,
             'enable_parallel': self.enable_parallel,
+            'enable_fp16': self.enable_fp16,
             'adversarial': self.adversarial,
             'loss_type': self.loss_type,
             'focal_loss_gamma': self.focal_loss_gamma,
@@ -227,10 +228,9 @@ class SequenceLabelingTrainer(BaseTrainer):
                 batch_input_ids, batch_att_mask, batch_label_ids = self._transform_batch(text_batch,
                                                                                          labels_batch,
                                                                                          max_length=batch_max_len)
-                if self.enable_fp16:  # 如果启用混合精度训练，用autocast封装，并放大loss
+                if self.enable_fp16:  # 如果启用混合精度训练，用autocast封装
                     with autocast():
                         best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
-                    loss = self.grad_scaler.scale(loss)
                 else:  # 不启用混合精度，正常训练
                     best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
 
@@ -238,8 +238,8 @@ class SequenceLabelingTrainer(BaseTrainer):
                 if self.enable_parallel:
                     loss = loss.mean()
 
-                # 反向传播计算梯度
-                loss.backward()
+                # 反向传播（混合精度需要放大loss再反传）
+                loss.backward() if not self.enable_fp16 else self.grad_scaler.scale(loss).backward()
 
                 # 对抗训练
                 if self.adversarial:
@@ -316,7 +316,6 @@ class SequenceLabelingTrainer(BaseTrainer):
             if self.enable_fp16:
                 with autocast():
                     best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
-                loss = self.grad_scaler.scale(loss)
             else:
                 best_paths, loss = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
 
