@@ -19,6 +19,7 @@
     - [warmup](#warmup)
     - [混合精度(fp16)](#混合精度fp16)
     - [领域预训练](#领域预训练)
+    - [后接RNN](#后接RNN)
 4. [理论教程 && 源码解读](#4-理论教程--源码解读)
 
 easy-bert是一个中文NLP工具，提供诸多**bert变体调用**和**调参方法**，**极速上手**；清晰的设计和代码注释，也**很适合学习**。
@@ -290,6 +291,14 @@ bert已经提供了通用领域的预训练。为了提升下游任务的效果�
 注意：
 - mlm的实现为wwm，即**全词mask**。分词主要基于词库，需要传入`word_dict`参数，可以使用jieba词库 https://github.com/fxsjy/jieba/blob/master/jieba/dict.txt ，建议把低频词滤掉；
 - 因为是**动态mask**，即多个epoch里的同一个batch的mask的地方不一样，所以需要更多的epoch去迭代；
+
+### 后接RNN
+可以在Bert后面接一层RNN
+
+可以通过`Trainer`的参数来控制：
+- `add_on`：声明**后接层种类**，可以是`None` `bilstm` `bigru`，默认为`None`；
+- `rnn_hidden`：**后接层rnn的hidden_size**，默认为`256`；
+- `rnn_lr`：**后接层rnn的learning_rate**，默认为`1e-3`，后接层的参数没有参与过预训练，学习率一般设置得较大；
 
 ## 4. 理论教程 && 源码解读
 - [docs/Attention、Transformer和Bert.md](docs/Attention、Transformer和Bert.md)
