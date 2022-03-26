@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
+from torch.nn import LSTM, GRU
 from transformers import AlbertModel
 from transformers import BertTokenizer, BertModel
 from transformers import DistilBertTokenizer, DistilBertModel
 from transformers import ElectraTokenizer, ElectraModel
-from transformers import LongformerModel, LongformerTokenizer
+from transformers import LongformerModel
 from transformers.activations import get_activation
 
 from easy_bert.losses.focal_loss import FocalLoss
@@ -14,8 +15,12 @@ from easy_bert.losses.label_smoothing_loss import LabelSmoothingCrossEntropy
 
 class ClassificationModel(nn.Module):
 
-    def __init__(self, bert_base_model_dir, label_size, dropout_rate=0.5,
-                 loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None):
+    def __init__(
+            self,
+            bert_base_model_dir, label_size, dropout_rate=0.5,
+            loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None,
+            add_on=None, rnn_hidden=256
+    ):
         super(ClassificationModel, self).__init__()
         self.label_size = label_size
 
@@ -25,6 +30,11 @@ class ClassificationModel(nn.Module):
         self.loss_type = loss_type
         self.focal_loss_gamma = focal_loss_gamma
         self.focal_loss_alpha = focal_loss_alpha
+
+        # bert附加层，可以不接或者接BiLSTM或BiGRU
+        assert add_on in (None, 'bilstm', 'bigru')
+        self.add_on = add_on
+        self.rnn_hidden = rnn_hidden
 
         # 自动获取当前设备
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -49,11 +59,22 @@ class ClassificationModel(nn.Module):
             self.bert_model = BertModel.from_pretrained(bert_base_model_dir)
 
         self.dropout = nn.Dropout(dropout_rate)
+
         # 定义linear层，进行 hidden_size->hidden_size 的映射，可以使用其作为bert pooler
         # 原始bert pooler是一个使用tanh激活的全连接层
         self.linear = nn.Linear(self.bert_model.config.hidden_size, self.bert_model.config.hidden_size)
+
+        cls_layer_input_size = self.bert_model.config.hidden_size  # 分类层输入size
+        # 附加层
+        if self.add_on:
+            rnn_class = LSTM if self.add_on == 'bilstm' else GRU
+            self.rnn = rnn_class(
+                self.bert_model.config.hidden_size, self.rnn_hidden, batch_first=True, bidirectional=True
+            )
+            cls_layer_input_size = 2 * self.rnn_hidden
+
         # 全连接分类层
-        self.cls_layer = nn.Linear(self.bert_model.config.hidden_size, label_size)
+        self.cls_layer = nn.Linear(cls_layer_input_size, label_size)
 
     def forward(self, input_ids, attention_mask, token_type_ids=None, position_ids=None,
                 head_mask=None, inputs_embeds=None, labels=None, return_extra=False):
@@ -99,8 +120,15 @@ class ClassificationModel(nn.Module):
             pooled_output = x
         else:
             last_hidden_state, pooled_output = bert_out[:2]
-        cls_outs = self.dropout(pooled_output)
-        logits = self.cls_layer(cls_outs)
+
+        cls_layer_input = pooled_output
+        if self.add_on:
+            rnn_out, _ = self.rnn(last_hidden_state)  # (batch,seq,bert_hidden) -> (batch,seq,2*rnn_hidden)
+            # 取rnn最后一个输出（前向rnn的最后一个位置，后向rnn的第0个位置，拼接）
+            last_rnn_out = torch.cat((rnn_out[:, -1, :self.rnn_hidden], rnn_out[:, 0, self.rnn_hidden:]), dim=-1)
+            cls_layer_input = last_rnn_out
+
+        logits = self.cls_layer(self.dropout(cls_layer_input))
 
         best_labels = torch.argmax(logits, dim=-1).to(self.device)
 

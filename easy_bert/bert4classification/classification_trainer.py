@@ -24,7 +24,8 @@ class ClassificationTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None, random_seed=0,
-                 warmup_type=None, warmup_step_num=10, enable_fp16=False):
+                 warmup_type=None, warmup_step_num=10, enable_fp16=False,
+                 add_on=None, rnn_hidden=256, rnn_lr=1e-3):
         self.pretrained_model_dir = pretrained_model_dir
         self.model_dir = model_dir
         self.ckpt_name = ckpt_name
@@ -35,9 +36,11 @@ class ClassificationTrainer(BaseTrainer):
         self.random_seed = random_seed
         self._set_random_seed(random_seed)
 
+        # 对抗训练配置
         self.adversarial = adversarial
         assert adversarial in (None, 'fgm', 'pgd')
 
+        # loss配置
         self.loss_type = loss_type
         self.focal_loss_gamma = focal_loss_gamma
         self.focal_loss_alpha = focal_loss_alpha
@@ -61,6 +64,10 @@ class ClassificationTrainer(BaseTrainer):
         self.warmup_type = warmup_type
         self.warmup_step_num = warmup_step_num
 
+        # 附加层配置（add-on）
+        self.add_on = add_on
+        self.rnn_hidden, self.rnn_lr = rnn_hidden, rnn_lr
+
         self.vocab = Vocab()
 
     def _set_random_seed(self, seed):
@@ -75,17 +82,22 @@ class ClassificationTrainer(BaseTrainer):
         # 实例化ClassificationModel模型
         self.model = ClassificationModel(
             self.pretrained_model_dir, self.vocab.label_size, dropout_rate=self.dropout_rate,
-            loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma
+            loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma,
+            add_on=self.add_on, rnn_hidden=self.rnn_hidden
         )
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化
-        # 参数分两组，分为decay or no_decay
+        # 区分bert参数和rnn参数
+        bert_parameters = [(name, param) for name, param in self.model.named_parameters() if 'rnn' not in name]
+        rnn_parameters = [(name, param) for name, param in self.model.named_parameters() if 'rnn' in name]
+        # 参数分组
         optimizer_grouped_parameters = [
-            {'params': [p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay)],
+            {'params': [p for n, p in bert_parameters if not any(nd in n for nd in no_decay)],
              'weight_decay': 0.01},
-            {'params': [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay)],
+            {'params': [p for n, p in bert_parameters if any(nd in n for nd in no_decay)],
              'weight_decay': 0.0},
+            {'params': [p for n, p in rnn_parameters], 'lr': self.rnn_lr}  # rnn layer设置自己的lr
         ]
         self.optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate)
 
@@ -119,6 +131,9 @@ class ClassificationTrainer(BaseTrainer):
             'focal_loss_gamma': self.focal_loss_gamma,
             'focal_loss_alpha': self.focal_loss_alpha,
             'pretrained_model': os.path.basename(self.pretrained_model_dir),
+            'add_on': self.add_on,
+            'rnn_hidden': self.rnn_hidden,
+            'rnn_lr': self.rnn_lr
         }
         with open('{}/train_config.json'.format(self.model_dir), 'w') as f:
             f.write(json.dumps(config, indent=4))
