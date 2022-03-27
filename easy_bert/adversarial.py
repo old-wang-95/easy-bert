@@ -1,4 +1,5 @@
 import torch
+from torch.cuda.amp import autocast
 
 """
 对抗训练
@@ -13,10 +14,11 @@ class FGM(object):
     Fast Gradient Method（FGM）
     """
 
-    def __init__(self, model, epsilon=1., emb_name='word_embeddings'):
+    def __init__(self, model, epsilon=1., emb_name='word_embeddings', grad_scaler=None):
         self.model = model
         self.epsilon = epsilon
         self.emb_name = emb_name
+        self.grad_scaler = grad_scaler
 
         self.backup = {}
 
@@ -41,8 +43,13 @@ class FGM(object):
     def train(self, *args, **kwargs):
         """对抗训练"""
         self.attack()  # 在embedding上增加扰动
-        _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
-        loss_adv.backward()  # 反向传播，在正常梯度上，累加扰动后的梯度
+        if self.grad_scaler:
+            with autocast():
+                _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
+            self.grad_scaler.scale(loss_adv).backward()
+        else:
+            _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
+            loss_adv.backward()  # 反向传播，在正常梯度上，累加扰动后的梯度
         self.restore()  # 恢复embedding层参数
 
 
@@ -51,12 +58,13 @@ class PGD(object):
     Projected Gradient Descent（PGD）
     """
 
-    def __init__(self, model, epsilon=1., alpha=0.3, emb_name='word_embeddings', k=3):
+    def __init__(self, model, epsilon=1., alpha=0.3, emb_name='word_embeddings', k=3, grad_scaler=None):
         self.model = model  # 对抗的model
         self.epsilon = epsilon  # 最大扰动半径
         self.alpha = alpha  # 步长
         self.emb_name = emb_name
         self.k = k  # 对抗阶数
+        self.grad_scaler = grad_scaler  # 混合精度训练需要的grad_scaler
 
         self.emb_backup = {}  # 备份embedding参数
         self.grad_backup = {}  # 备份梯度
@@ -115,7 +123,11 @@ class PGD(object):
                 self.model.zero_grad()  # 前几次对抗时，清空梯度，便于计算k_i时刻新梯度
             else:
                 self.restore_grad()  # 最后一次对抗时，恢复对抗前所有参数梯度
-            _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
-            loss_adv.backward()  # 反向传播，计算新梯度（最后一次时，累加扰动的梯度）
-
+            if self.grad_scaler:
+                with autocast():
+                    _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
+                self.grad_scaler.scale(loss_adv).backward()  # 反向传播，计算新梯度（最后一次时，累加扰动的梯度）
+            else:
+                _, loss_adv = self.model(*args, **kwargs)  # 使用扰动后的embedding计算新loss
+                loss_adv.backward()  # 反向传播，计算新梯度（最后一次时，累加扰动的梯度）
         self.restore()  # 恢复embedding层参数

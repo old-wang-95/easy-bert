@@ -203,7 +203,8 @@ class ClassificationTrainer(BaseTrainer):
         # 根据对抗配置，实例化不同的对抗实例
         if self.adversarial:
             logger.info('enable adversarial training')
-            adv = FGM(self.model) if self.adversarial == 'fgm' else PGD(self.model)
+            adv_class = {'fgm': FGM, 'pgd': PGD}[self.adversarial]
+            adv = adv_class(self.model, grad_scaler=self.grad_scaler if self.enable_fp16 else None)
 
         # 根据warmup配置，设置warmup
         if self.warmup_type:
