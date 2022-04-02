@@ -45,7 +45,8 @@ class SequenceLabelingPredictor(BasePredictor):
         self.model = SequenceLabelingModel(
             self.pretrained_model_dir, self._config['label_size'], self._config['dropout_rate'],
             loss_type=self._config['loss_type'], focal_loss_alpha=self._config['focal_loss_alpha'],
-            focal_loss_gamma=self._config['focal_loss_gamma']
+            focal_loss_gamma=self._config['focal_loss_gamma'],
+            add_on=self._config['add_on'], rnn_hidden=self._config['rnn_hidden']
         )
 
         # 加载模型文件里的参数

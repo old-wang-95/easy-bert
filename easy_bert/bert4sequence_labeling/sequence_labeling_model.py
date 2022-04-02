@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
+from torch.nn import LSTM, GRU
 from transformers import AlbertModel
 from transformers import BertTokenizer, BertModel
 from transformers import DistilBertTokenizer, DistilBertModel
@@ -14,8 +15,12 @@ from easy_bert.losses.label_smoothing_loss import LabelSmoothingCrossEntropy
 
 class SequenceLabelingModel(nn.Module):
 
-    def __init__(self, bert_base_model_dir, label_size, drop_out_rate=0.5,
-                 loss_type='crf_loss', focal_loss_gamma=2, focal_loss_alpha=None):
+    def __init__(
+            self,
+            bert_base_model_dir, label_size, drop_out_rate=0.5,
+            loss_type='crf_loss', focal_loss_gamma=2, focal_loss_alpha=None,
+            add_on=None, rnn_hidden=256
+    ):
         super(SequenceLabelingModel, self).__init__()
         self.label_size = label_size
 
@@ -25,6 +30,11 @@ class SequenceLabelingModel(nn.Module):
         self.loss_type = loss_type
         self.focal_loss_gamma = focal_loss_gamma
         self.focal_loss_alpha = focal_loss_alpha
+
+        # bert附加层，可以不接或者接BiLSTM或BiGRU
+        assert add_on in (None, 'bilstm', 'bigru')
+        self.add_on = add_on
+        self.rnn_hidden = rnn_hidden
 
         # 自动获取当前设备
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -49,8 +59,19 @@ class SequenceLabelingModel(nn.Module):
             self.bert_model = BertModel.from_pretrained(bert_base_model_dir)
 
         self.dropout = nn.Dropout(drop_out_rate)
+
+        linear_layer_input_size = self.bert_model.config.hidden_size  # 分类层输入size
+        # 附加层
+        if self.add_on:
+            rnn_class = LSTM if self.add_on == 'bilstm' else GRU
+            self.rnn = rnn_class(
+                self.bert_model.config.hidden_size, self.rnn_hidden, batch_first=True, bidirectional=True
+            )
+            linear_layer_input_size = 2 * self.rnn_hidden
+
         # 定义linear层，将hidden_size映射到label_size层
-        self.linear = nn.Linear(self.bert_model.config.hidden_size, label_size)
+        self.linear = nn.Linear(linear_layer_input_size, label_size)
+
         # 定义crf层
         self.crf = CRF(label_size)
 
@@ -78,8 +99,13 @@ class SequenceLabelingModel(nn.Module):
         bert_out, (hidden_states, attentions) = bert_out[:-2], bert_out[-2:]
 
         last_hidden_state = bert_out[0]
-        seq_outs = self.dropout(last_hidden_state)
-        logits = self.linear(seq_outs)
+
+        linear_layer_input = last_hidden_state
+        if self.add_on:
+            rnn_out, _ = self.rnn(last_hidden_state)  # (batch,seq,bert_hidden) -> (batch,seq,2*rnn_hidden)
+            linear_layer_input = rnn_out
+
+        logits = self.linear(self.dropout(linear_layer_input))
 
         # 根据loss_type，选择使用维特比解码或直接argmax
         if self.loss_type == 'crf_loss':

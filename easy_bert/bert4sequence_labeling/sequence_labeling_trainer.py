@@ -2,6 +2,7 @@ import json
 import math
 import os
 import random
+import re
 
 import numpy as np
 import torch
@@ -24,7 +25,7 @@ class SequenceLabelingTrainer(BaseTrainer):
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
                  loss_type='crf_loss', crf_learning_rate=None, focal_loss_gamma=2, focal_loss_alpha=None,
                  random_seed=0, warmup_type=None, warmup_step_num=10, enable_fp16=False,
-                 load_last_ckpt=False):
+                 add_on=None, rnn_hidden=256, rnn_lr=1e-3, load_last_ckpt=False):
         # 设置目录
         self.pretrained_model_dir, self.model_dir = pretrained_model_dir, model_dir
         self.ckpt_name, self.vocab_name = ckpt_name, vocab_name
@@ -40,6 +41,7 @@ class SequenceLabelingTrainer(BaseTrainer):
         self.adversarial = adversarial
         assert adversarial in (None, 'fgm', 'pgd')
 
+        # loss配置
         self.loss_type = loss_type
         self.crf_learning_rate = crf_learning_rate or learning_rate * 10  # crf层初始化为10倍的learning_rate
         self.focal_loss_gamma = focal_loss_gamma
@@ -64,6 +66,10 @@ class SequenceLabelingTrainer(BaseTrainer):
         self.warmup_type = warmup_type
         self.warmup_step_num = warmup_step_num
 
+        # 附加层配置（add-on）
+        self.add_on = add_on
+        self.rnn_hidden, self.rnn_lr = rnn_hidden, rnn_lr
+
         self.vocab = Vocab()
 
     def _set_random_seed(self, seed):
@@ -78,7 +84,8 @@ class SequenceLabelingTrainer(BaseTrainer):
         # 实例化SequenceLabelingModel模型
         self.model = SequenceLabelingModel(
             self.pretrained_model_dir, self.vocab.label_size, drop_out_rate=self.dropout_rate,
-            loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma
+            loss_type=self.loss_type, focal_loss_alpha=self.focal_loss_alpha, focal_loss_gamma=self.focal_loss_gamma,
+            add_on=self.add_on, rnn_hidden=self.rnn_hidden
         )
 
         # 如果启用增量训练，预加载之前训练好的模型
@@ -90,13 +97,17 @@ class SequenceLabelingTrainer(BaseTrainer):
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化
-        # 区分bert层的参数和crf层的参数，bert层的参数分为decay or no_decay
-        bert_parameters = [(name, param) for name, param in self.model.named_parameters() if 'crf' not in name]
+        # 区分bert层的参数和crf层、rnn层的参数，bert层的参数分为decay or no_decay
         crf_parameters = [(name, param) for name, param in self.model.named_parameters() if 'crf' in name]
+        rnn_parameters = [(name, param) for name, param in self.model.named_parameters() if 'rnn' in name]
+        bert_parameters = [
+            (name, param) for name, param in self.model.named_parameters() if not re.search('crf|rnn', name)
+        ]
         optimizer_grouped_parameters = [
             {'params': [p for n, p in bert_parameters if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
             {'params': [p for n, p in bert_parameters if any(nd in n for nd in no_decay)], 'weight_decay': 0.0},
-            {'params': [p for n, p in crf_parameters], 'lr': self.crf_learning_rate}  # crf layer设置自己的lr
+            {'params': [p for n, p in crf_parameters], 'lr': self.crf_learning_rate},  # crf layer设置自己的lr
+            {'params': [p for n, p in rnn_parameters], 'lr': self.rnn_lr}  # rnn layer设置自己的lr
         ]
         self.optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate)
 
@@ -132,6 +143,9 @@ class SequenceLabelingTrainer(BaseTrainer):
             'focal_loss_gamma': self.focal_loss_gamma,
             'focal_loss_alpha': self.focal_loss_alpha,
             'pretrained_model': os.path.basename(self.pretrained_model_dir),
+            'add_on': self.add_on,
+            'rnn_hidden': self.rnn_hidden,
+            'rnn_lr': self.rnn_lr
         }
         with open('{}/train_config.json'.format(self.model_dir), 'w') as f:
             f.write(json.dumps(config, indent=4))
