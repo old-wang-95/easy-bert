@@ -149,7 +149,7 @@ dropout_rate随机丢弃一部分神经元来避免过拟合，隐含了集成�
     - 你可以进一步设置`focal_loss_gamma`和`focal_loss_alpha`，默认`focal_loss_gamma=2` `focal_loss_alpha=None`
     - 设置`focal_loss_alpha`时，请**确保它是一个标签权重分布**，如：三分类设置`focal_loss_alpha=[1, 1, 1.5]`，表示我们更关注label_id为2的标签，因为它的样本数更少；
 - `crf_loss`：**crf层学习标签与标签之间的转移**，仅支持序列标注任务，**`SequenceLabelingTrainer`默认**；
-    - 你可以进一步设置`crf_learning_rate`，**一般crf层会使用大一点的学习率**，确保转移矩阵学好，默认`crf_learning_rate=None`，表示会使用10倍的`learning_rate`；
+    - 你可以进一步设置`crf_learning_rate`，**一般crf层会使用大一点的学习率**，确保转移矩阵学好，默认`crf_learning_rate=1e-3`；
 
 更多代码样例参考：[tests/test_bert4classification.py](tests/test_bert4classification.py#L44)  [tests/test_bert4sequence_labeling.py](tests/test_bert4sequence_labeling.py#L51)
 

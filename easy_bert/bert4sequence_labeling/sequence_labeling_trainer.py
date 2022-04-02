@@ -23,7 +23,7 @@ from easy_bert.vocab import Vocab
 class SequenceLabelingTrainer(BaseTrainer):
     def __init__(self, pretrained_model_dir, model_dir, learning_rate=5e-5, ckpt_name='bert_model.bin',
                  vocab_name='vocab.json', enable_parallel=False, adversarial=None, dropout_rate=0.5,
-                 loss_type='crf_loss', crf_learning_rate=None, focal_loss_gamma=2, focal_loss_alpha=None,
+                 loss_type='crf_loss', crf_learning_rate=1e-3, focal_loss_gamma=2, focal_loss_alpha=None,
                  random_seed=0, warmup_type=None, warmup_step_num=10, enable_fp16=False,
                  add_on=None, rnn_hidden=256, rnn_lr=1e-3, load_last_ckpt=False):
         # 设置目录
