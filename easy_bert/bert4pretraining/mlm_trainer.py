@@ -213,7 +213,7 @@ class MaskedLMTrainer(object):
                 self.model.zero_grad()  # 清空梯度
 
                 # 训练
-                batch_max_len = max([len(text) for text in text_batch]) + 2  # 长度得加上[CLS]和[SEP]
+                batch_max_len = max([len(text.replace(' ', '')) for text in text_batch]) + 2  # 长度得加上[CLS]和[SEP]
                 if warning_max_len and batch_max_len > 512:
                     logger.warning(
                         'current batch max_len is {}, > 512, which may not be processed by bert!'.format(batch_max_len)
