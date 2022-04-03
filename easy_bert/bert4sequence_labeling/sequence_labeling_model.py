@@ -8,9 +8,11 @@ from transformers import DistilBertTokenizer, DistilBertModel
 from transformers import ElectraTokenizer, ElectraModel
 from transformers import LongformerModel
 
+from easy_bert import logger
 from easy_bert.losses.crf_layer import CRF
 from easy_bert.losses.focal_loss import FocalLoss
 from easy_bert.losses.label_smoothing_loss import LabelSmoothingCrossEntropy
+from easy_bert.modeling_nezha import NeZhaModel
 
 
 class SequenceLabelingModel(nn.Module):
@@ -54,9 +56,17 @@ class SequenceLabelingModel(nn.Module):
         elif 'distil' in bert_base_model_dir.lower():
             self.bert_tokenizer = DistilBertTokenizer.from_pretrained(bert_base_model_dir)
             self.bert_model = DistilBertModel.from_pretrained(bert_base_model_dir)
+        elif 'nezha' in bert_base_model_dir.lower():
+            self.bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
+            self.bert_model = NeZhaModel.from_pretrained(
+                bert_base_model_dir, output_hidden_states=True, output_attentions=True
+            )
         else:
             self.bert_tokenizer = BertTokenizer.from_pretrained(bert_base_model_dir)
             self.bert_model = BertModel.from_pretrained(bert_base_model_dir)
+
+        logger.info('tokenizer: {}, bert_model: {}'.
+                    format(self.bert_tokenizer.__class__.__name__, self.bert_model.__class__.__name__))
 
         self.dropout = nn.Dropout(drop_out_rate)
 
@@ -89,6 +99,12 @@ class SequenceLabelingModel(nn.Module):
             bert_out = self.bert_model(
                 input_ids=input_ids, attention_mask=attention_mask, inputs_embeds=None, return_dict=False,
                 output_hidden_states=True, output_attentions=True
+            )
+        elif isinstance(self.bert_model, NeZhaModel):
+            # nazhe模型会少一些参数
+            bert_out = self.bert_model(
+                input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                position_ids=position_ids, inputs_embeds=None,
             )
         else:
             bert_out = self.bert_model(
