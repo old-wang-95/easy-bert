@@ -12,6 +12,7 @@ from transformers import AdamW
 from transformers import BertTokenizer, BertForMaskedLM
 
 from easy_bert import logger
+from easy_bert.modeling_nezha import NeZhaForMaskedLM
 
 
 class MaskedLMTrainer(object):
@@ -60,7 +61,11 @@ class MaskedLMTrainer(object):
         """构建bert模型"""
         # 实例化BertForMaskedLM模型
         self.bert_tokenizer = BertTokenizer.from_pretrained(self.pretrained_model_dir)
-        self.model = BertForMaskedLM.from_pretrained(self.pretrained_model_dir)
+        if 'nezha' in self.pretrained_model_dir:
+            self.model = NeZhaForMaskedLM.from_pretrained(self.pretrained_model_dir)
+        else:
+            self.model = BertForMaskedLM.from_pretrained(self.pretrained_model_dir)
+        logger.info('current model: {}'.format(self.model.__class__.__name__))
 
         # 如果启用增量训练，预加载之前训练好的模型
         if self.load_last_ckpt and os.path.exists('{}/{}'.format(self.model_dir, self.ckpt_name)):
@@ -222,13 +227,19 @@ class MaskedLMTrainer(object):
                                                                                          max_length=batch_max_len)
                 if self.enable_fp16:  # 如果启用混合精度训练，用autocast封装
                     with autocast():
+                        if isinstance(self.model, NeZhaForMaskedLM):
+                            loss, logits = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+                        else:
+                            loss, logits = self.model(
+                                batch_input_ids, batch_att_mask, labels=batch_label_ids, return_dict=False
+                            )
+                else:  # 不启用混合精度，正常训练
+                    if isinstance(self.model, NeZhaForMaskedLM):
+                        loss, logits = self.model(batch_input_ids, batch_att_mask, labels=batch_label_ids)
+                    else:
                         loss, logits = self.model(
                             batch_input_ids, batch_att_mask, labels=batch_label_ids, return_dict=False
                         )
-                else:  # 不启用混合精度，正常训练
-                    loss, logits = self.model(
-                        batch_input_ids, batch_att_mask, labels=batch_label_ids, return_dict=False
-                    )
 
                 labels_predict = torch.argmax(logits, dim=-1)
                 train_acc = self._get_acc_one_step(labels_predict, batch_label_ids)
