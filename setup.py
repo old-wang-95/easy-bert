@@ -22,7 +22,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'torch==1.6.0',
-        'transformers==3.1.0',
+        'transformers==4.6.0',
         'scikit-learn==0.24.0',
         'numpy==1.17.0',
         'datasets==1.16.0',
