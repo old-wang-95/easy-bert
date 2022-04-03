@@ -112,11 +112,13 @@ trainer.train(texts, batch_size=1, epoch=20)
 - [bert-base-chinese](https://huggingface.co/bert-base-chinese)
 - [chinese-electra-180g-base-discriminator](https://huggingface.co/hfl/chinese-electra-180g-base-discriminator)
 - [chinese-roberta-wwm-ext](https://huggingface.co/hfl/chinese-roberta-wwm-ext)
+- [nezha-base-wwm](https://github.com/lonePatient/NeZha_Chinese_PyTorch)
 - [TinyBERT_4L_zh](https://huggingface.co/huawei-noah/TinyBERT_4L_zh)
 - [bert-distil-chinese](https://huggingface.co/adamlin/bert-distil-chinese)
 - [longformer-chinese-base-4096](https://huggingface.co/schen/longformer-chinese-base-4096)
+- 以上大部分模型的large版本
 
-可以优先使用`chinese-roberta-wwm-ext`
+可以优先使用`chinese-roberta-wwm-ext`或者`nezha-base-wwm`
 
 ### 学习率
 
