@@ -2,6 +2,7 @@ import json
 import math
 import os
 import random
+import re
 
 import numpy as np
 import torch
@@ -26,7 +27,7 @@ class ClassificationTrainer(BaseTrainer):
                  loss_type='cross_entropy_loss', focal_loss_gamma=2, focal_loss_alpha=None, random_seed=0,
                  warmup_type=None, warmup_step_num=10, enable_fp16=False,
                  add_on=None, rnn_hidden=256, rnn_lr=1e-3,
-                 load_last_ckpt=False):
+                 load_last_ckpt=False, layer_wise_lr_decay=False, lr_decay_rate=0.95):
         # 设置目录
         self.pretrained_model_dir, self.model_dir = pretrained_model_dir, model_dir
         self.ckpt_name, self.vocab_name = ckpt_name, vocab_name
@@ -71,6 +72,10 @@ class ClassificationTrainer(BaseTrainer):
         self.add_on = add_on
         self.rnn_hidden, self.rnn_lr = rnn_hidden, rnn_lr
 
+        # llrd配置
+        self.layer_wise_lr_decay = layer_wise_lr_decay
+        self.lr_decay_rate = lr_decay_rate
+
         self.vocab = Vocab()
 
     def _set_random_seed(self, seed):
@@ -98,17 +103,46 @@ class ClassificationTrainer(BaseTrainer):
 
         # 设置AdamW优化器
         no_decay = ["bias", "LayerNorm.weight"]  # bias和LayerNorm不使用正则化
-        # 区分bert参数和rnn参数
-        bert_parameters = [(name, param) for name, param in self.model.named_parameters() if 'rnn' not in name]
-        rnn_parameters = [(name, param) for name, param in self.model.named_parameters() if 'rnn' in name]
         # 参数分组
+        embedding_parameters, encoder_parameters = [], {}
+        linear_parameters, rnn_parameters = [], []
+        for name, param in self.model.named_parameters():
+            if 'rnn' in name:
+                rnn_parameters.append((name, param))
+            elif 'embeddings' in name:
+                embedding_parameters.append((name, param))
+            elif 'encoder.layer' in name:
+                layer_no = int(re.search('encoder\.layer\.(\d+)', name).group(1))
+                if layer_no not in encoder_parameters:
+                    encoder_parameters[layer_no] = []
+                encoder_parameters[layer_no].append((name, param))
+            else:
+                linear_parameters.append((name, param))
+        # 为不同参数组设置不同的lr
+        num_hidden_layers = self.model.bert_model.config.num_hidden_layers
         optimizer_grouped_parameters = [
-            {'params': [p for n, p in bert_parameters if not any(nd in n for nd in no_decay)],
-             'weight_decay': 0.01},
-            {'params': [p for n, p in bert_parameters if any(nd in n for nd in no_decay)],
-             'weight_decay': 0.0},
-            {'params': [p for n, p in rnn_parameters], 'lr': self.rnn_lr}  # rnn layer设置自己的lr
+            {'params': [p for n, p in embedding_parameters if not any(nd in n for nd in no_decay)],
+             'weight_decay': 0.01,
+             'lr': self.learning_rate * self.lr_decay_rate ** num_hidden_layers if self.layer_wise_lr_decay else self.learning_rate},
+            {'params': [p for n, p in embedding_parameters if any(nd in n for nd in no_decay)],
+             'weight_decay': 0.0,
+             'lr': self.learning_rate * self.lr_decay_rate ** num_hidden_layers if self.layer_wise_lr_decay else self.learning_rate},
         ]
+        for layer_no in range(num_hidden_layers):
+            optimizer_grouped_parameters.extend([
+                {'params': [p for n, p in encoder_parameters[layer_no] if not any(nd in n for nd in no_decay)],
+                 'weight_decay': 0.01,
+                 'lr': self.learning_rate * self.lr_decay_rate ** (
+                         num_hidden_layers - layer_no - 1) if self.layer_wise_lr_decay else self.learning_rate},
+                {'params': [p for n, p in encoder_parameters[layer_no] if any(nd in n for nd in no_decay)],
+                 'weight_decay': 0.0,
+                 'lr': self.learning_rate * self.lr_decay_rate ** (
+                         num_hidden_layers - layer_no - 1) if self.layer_wise_lr_decay else self.learning_rate},
+            ])
+        optimizer_grouped_parameters.extend([
+            {'params': [p for n, p in linear_parameters], 'lr': self.learning_rate},
+            {'params': [p for n, p in rnn_parameters], 'lr': self.rnn_lr}  # rnn layer设置自己的lr
+        ])
         self.optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate)
 
         # 使用bert的vocab更新Vocab对象
@@ -144,7 +178,10 @@ class ClassificationTrainer(BaseTrainer):
             'pretrained_model': os.path.basename(self.pretrained_model_dir),
             'add_on': self.add_on,
             'rnn_hidden': self.rnn_hidden,
-            'rnn_lr': self.rnn_lr
+            'rnn_lr': self.rnn_lr,
+            'random_seed': self.random_seed,
+            'layer_wise_lr_decay': self.layer_wise_lr_decay,
+            'lr_decay_rate': self.lr_decay_rate,
         }
         with open('{}/train_config.json'.format(self.model_dir), 'w') as f:
             f.write(json.dumps(config, indent=4))
